@@ -7,4 +7,5 @@
 ```
 pip install -r requirements.txt
 python -m src.run_pipeline
+python -m src.run_visualization  # 主要銘柄のアベノミクス期可視化
 ```
