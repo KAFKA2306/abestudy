@@ -45,10 +45,21 @@ def _classification(weights, mapping):
     return grouped
 
 
-def build_yearly_portfolios(frames, classification, years, max_weight):
+def _weight_entries(weights, names, tickers):
+    return {
+        ticker: {
+            "name": names.get(ticker, ""),
+            "weight": float(weights.get(ticker, 0.0)),
+        }
+        for ticker in tickers
+    }
+
+
+def build_yearly_portfolios(frames, classification, years, max_weight, names):
     closes = pd.DataFrame({ticker: frame["close"] for ticker, frame in frames.items()})
     closes = closes.sort_index()
     returns = closes.pct_change().dropna()
+    tickers = list(frames.keys())
     results = {}
     for year in years:
         year_returns = returns.loc[str(year)]
@@ -59,9 +70,16 @@ def build_yearly_portfolios(frames, classification, years, max_weight):
         classes = _classification(weights, classification)
         results[year] = {
             "period": {"start": f"{year}-01-01", "end": f"{year}-12-31"},
-            "universe": [{"ticker": ticker, "asset_class": classification.get(ticker, "unclassified")} for ticker in year_returns.columns],
+            "universe": [
+                {
+                    "ticker": ticker,
+                    "name": names.get(ticker, ""),
+                    "asset_class": classification.get(ticker, "unclassified"),
+                }
+                for ticker in tickers
+            ],
             "portfolio": {
-                "weights": {ticker: float(weight) for ticker, weight in weights.items()},
+                "weights": _weight_entries(weights, names, tickers),
                 "risk_metrics": metrics,
                 "classification": classes,
             },
