@@ -2,29 +2,87 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
+from ..common.config import TRADING_DAYS
 
-def _weight_sharpe(returns, max_weight):
-    means = returns.mean().values
-    cov = returns.cov().values
+
+def _annualize_return(daily_mean: float) -> float:
+    return float(daily_mean * TRADING_DAYS)
+
+
+def _annualize_volatility(daily_vol: float) -> float:
+    return float(daily_vol * np.sqrt(TRADING_DAYS))
+
+
+def _clean_training_returns(returns: pd.DataFrame) -> pd.DataFrame:
+    """Remove missing values while preserving available tickers.
+
+    Rows containing any missing values are dropped because the optimizer
+    requires aligned observations to compute the covariance matrix. Columns
+    without any observed data are dropped to avoid propagating NaNs.
+    """
+
+    if returns.empty:
+        return returns
+
+    cleaned = returns.dropna(axis=1, how="all")
+    cleaned = cleaned.dropna(how="any")
+    return cleaned
+
+
+def _weight_sharpe(returns: pd.DataFrame, max_weight: float) -> pd.Series:
+    cleaned = _clean_training_returns(returns)
+    tickers = list(returns.columns)
+
+    if cleaned.empty:
+        # Fall back to an equal weight allocation when there is insufficient
+        # history. The caller is expected to guard against this situation, but
+        # we still guard to keep the API robust.
+        equal = np.full(len(tickers), 1 / len(tickers))
+        return pd.Series(equal, index=tickers)
+
+    means = cleaned.mean().values
+    cov = cleaned.cov().values
     count = len(means)
+
     def objective(weights):
-        port_return = np.dot(weights, means) * 252
-        port_vol = np.sqrt(np.dot(weights, cov).dot(weights) * 252)
+        port_return = np.dot(weights, means) * TRADING_DAYS
+        port_vol = np.sqrt(np.dot(weights, cov).dot(weights) * TRADING_DAYS)
         return 0 if port_vol == 0 else -port_return / port_vol
+
     bounds = [(0, max_weight)] * count
     constraints = ({"type": "eq", "fun": lambda w: np.sum(w) - 1},)
     initial = np.full(count, 1 / count)
     result = minimize(objective, initial, bounds=bounds, constraints=constraints)
-    weights = result.x
+
+    if not result.success or np.allclose(result.x.sum(), 0):
+        weights = initial
+    else:
+        weights = result.x
+
     weights = np.clip(weights, 0, max_weight)
     weights = weights / weights.sum()
-    return pd.Series(weights, index=returns.columns)
+
+    # Reconstruct the full ticker universe, assigning zero weight to tickers
+    # that were dropped during cleaning.
+    series = pd.Series(0.0, index=tickers)
+    for ticker, weight in zip(cleaned.columns, weights):
+        series.loc[ticker] = weight
+    return series
 
 
-def _metrics(returns, weights):
-    daily = returns.dot(weights)
-    annual_return = float(daily.mean() * 252)
-    volatility = float(daily.std(ddof=0) * np.sqrt(252))
+def _metrics(returns: pd.DataFrame, weights: pd.Series):
+    available = returns.loc[:, weights.index].dropna()
+    if available.empty:
+        return {
+            "annual_return": 0.0,
+            "volatility": 0.0,
+            "sharpe_ratio": 0.0,
+            "max_drawdown": 0.0,
+        }
+
+    daily = available.dot(weights.loc[available.columns])
+    annual_return = _annualize_return(float(daily.mean()))
+    volatility = _annualize_volatility(float(daily.std(ddof=0)))
     sharpe_ratio = 0.0 if volatility == 0 else annual_return / volatility
     curve = (1 + daily).cumprod()
     drawdown = (curve / curve.cummax()) - 1
@@ -55,19 +113,50 @@ def _weight_entries(weights, names, tickers):
     }
 
 
-def build_yearly_portfolios(frames, classification, years, max_weight, names):
+def build_yearly_portfolios(
+    frames,
+    classification,
+    years,
+    max_weight,
+    names,
+    lookback_days,
+    min_training_observations,
+):
     closes = pd.DataFrame({ticker: frame["close"] for ticker, frame in frames.items()})
     closes = closes.sort_index()
     returns = closes.pct_change().dropna()
     tickers = list(frames.keys())
     results = {}
+    tz = returns.index.tz
     for year in years:
-        year_returns = returns.loc[str(year)]
+        start = pd.Timestamp(year=year, month=1, day=1, tz=tz)
+        end = pd.Timestamp(year=year, month=12, day=31, tz=tz)
+
+        year_mask = (returns.index >= start) & (returns.index <= end)
+        year_returns = returns.loc[year_mask]
         if year_returns.empty:
             continue
-        weights = _weight_sharpe(year_returns, max_weight)
+
+        if lookback_days is None:
+            train_mask = returns.index < start
+        else:
+            train_start = start - pd.Timedelta(days=lookback_days)
+            train_mask = (returns.index >= train_start) & (returns.index < start)
+
+        training_returns = returns.loc[train_mask]
+        cleaned_training = _clean_training_returns(training_returns)
+        if cleaned_training.shape[0] < min_training_observations:
+            continue
+
+        weights = _weight_sharpe(training_returns, max_weight)
         metrics = _metrics(year_returns, weights)
         classes = _classification(weights, classification)
+
+        training_start = cleaned_training.index.min()
+        training_end = cleaned_training.index.max()
+        evaluation_start = year_returns.index.min()
+        evaluation_end = year_returns.index.max()
+
         results[year] = {
             "period": {"start": f"{year}-01-01", "end": f"{year}-12-31"},
             "universe": [
@@ -82,6 +171,14 @@ def build_yearly_portfolios(frames, classification, years, max_weight, names):
                 "weights": _weight_entries(weights, names, tickers),
                 "risk_metrics": metrics,
                 "classification": classes,
+                "training_window": {
+                    "start": training_start.isoformat() if training_start is not None else None,
+                    "end": training_end.isoformat() if training_end is not None else None,
+                },
+                "evaluation_window": {
+                    "start": evaluation_start.isoformat() if evaluation_start is not None else None,
+                    "end": evaluation_end.isoformat() if evaluation_end is not None else None,
+                },
             },
         }
     return results

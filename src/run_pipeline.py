@@ -1,6 +1,17 @@
 import yaml
 
-from .common.config import DATA_RAW, REPORT_DIR, TIMELINE_START, TIMELINE_END, TIMEZONE, YEARS, MAX_WEIGHT, TICKER_NAMES_FILE
+from .common.config import (
+    DATA_RAW,
+    REPORT_DIR,
+    TIMELINE_START,
+    TIMELINE_END,
+    TIMEZONE,
+    YEARS,
+    MAX_WEIGHT,
+    TICKER_NAMES_FILE,
+    LOOKBACK_DAYS,
+    MIN_TRAINING_OBSERVATIONS,
+)
 from .common.universe import TICKERS, CLASSIFICATION
 from .ingestion.yfinance_client import collect
 from .data_io.yaml_store import save_frames, load_frames
@@ -13,7 +24,15 @@ def main():
     frames = collect(TICKERS, TIMELINE_START, TIMELINE_END, TIMEZONE)
     save_frames(frames, DATA_RAW)
     loaded = load_frames(TICKERS, DATA_RAW)
-    portfolios = build_yearly_portfolios(loaded, CLASSIFICATION, YEARS, MAX_WEIGHT, names)
+    portfolios = build_yearly_portfolios(
+        loaded,
+        CLASSIFICATION,
+        YEARS,
+        MAX_WEIGHT,
+        names,
+        LOOKBACK_DAYS,
+        MIN_TRAINING_OBSERVATIONS,
+    )
     write_reports(portfolios, REPORT_DIR)
 
 
