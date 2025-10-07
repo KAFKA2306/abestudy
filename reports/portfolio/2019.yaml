@@ -1,437 +1,589 @@
+year: 2019
 period:
   start: 2019-01-01
   end: 2019-12-31
-universe:
-  -
-    ticker: 1332.T
-    name: Nissui
-  -
-    ticker: 4061.T
-    name: Denka
-  -
-    ticker: 5714.T
-    name: DOWA Holdings
-  -
-    ticker: 7011.T
-    name: Mitsubishi Heavy Industries
-  -
-    ticker: 8604.T
-    name: NOMURA HOLDINGS, INC.
-  -
-    ticker: 4063.T
-    name: Shin-Etsu Chemical
-  -
-    ticker: 7012.T
-    name: Kawasaki Heavy Industries
-  -
-    ticker: 1605.T
-    name: Inpex Corp
-  -
-    ticker: 4151.T
-    name: KYOWA KIRIN CO., LTD.
-  -
-    ticker: 4502.T
-    name: TAKEDA PHARMACEUTICAL CO., LTD.
-  -
-    ticker: 4503.T
-    name: ASTELLAS PHARMA INC.
-  -
-    ticker: 4506.T
-    name: SUMITOMO PHARMA CO., LTD.
-  -
-    ticker: 4507.T
-    name: SHIONOGI & CO., LTD.
-  -
-    ticker: 4519.T
-    name: CHUGAI PHARMACEUTICAL CO., LTD.
-  -
-    ticker: 4523.T
-    name: EISAI CO., LTD.
-  -
-    ticker: 4568.T
-    name: DAIICHI SANKYO CO., LTD.
-  -
-    ticker: 6479.T
-    name: MINEBEA MITSUMI INC.
-  -
-    ticker: 6501.T
-    name: HITACHI, LTD.
-  -
-    ticker: 6503.T
-    name: MITSUBISHI ELECTRIC CORP.
-  -
-    ticker: 6504.T
-    name: FUJI ELECTRIC CO., LTD.
-  -
-    ticker: 6506.T
-    name: YASKAWA ELECTRIC CORP.
-  -
-    ticker: 6594.T
-    name: NIDEC CORP.
-  -
-    ticker: 6645.T
-    name: OMRON CORP.
-  -
-    ticker: 6674.T
-    name: GS YUASA CORP.
-  -
-    ticker: 6701.T
-    name: NEC CORP.
-  -
-    ticker: 6702.T
-    name: FUJITSU LTD.
-  -
-    ticker: 6723.T
-    name: RENESAS ELECTRONICS CORP.
-  -
-    ticker: 6724.T
-    name: SEIKO EPSON CORP.
-  -
-    ticker: 6752.T
-    name: PANASONIC HOLDINGS CORP.
-  -
-    ticker: 6753.T
-    name: SHARP CORP.
-  -
-    ticker: 6758.T
-    name: SONY GROUP CORP.
-  -
-    ticker: 6762.T
-    name: TDK CORP.
-  -
-    ticker: 6770.T
-    name: ALPS ALPINE CO., LTD.
-  -
-    ticker: 6841.T
-    name: YOKOGAWA ELECTRIC CORP.
-  -
-    ticker: 6857.T
-    name: ADVANTEST CORP.
-  -
-    ticker: 6861.T
-    name: KEYENCE CORP.
-  -
-    ticker: 6902.T
-    name: DENSO CORP.
-  -
-    ticker: 6952.T
-    name: CASIO COMPUTER CO., LTD.
-  -
-    ticker: 6954.T
-    name: FANUC CORP.
-  -
-    ticker: 6963.T
-    name: ROHM CO., LTD.
-  -
-    ticker: 9984.T
-    name: SOFTBANK GROUP CORP.
-  -
-    ticker: 8306.T
-    name: MITSUBISHI UFJ FINANCIAL GROUP, INC.
-  -
-    ticker: 8316.T
-    name: SUMITOMO MITSUI FINANCIAL GROUP, INC.
-  -
-    ticker: 7974.T
-    name: NINTENDO CO., LTD.
-  -
-    ticker: 9983.T
-    name: FAST RETAILING CO., LTD.
-  -
-    ticker: 9432.T
-    name: NTT, INC.
-  -
-    ticker: 8411.T
-    name: MIZUHO FINANCIAL GROUP, INC.
-  -
-    ticker: 8766.T
-    name: TOKIO MARINE HOLDINGS, INC.
-  -
-    ticker: 8031.T
-    name: MITSUI & CO., LTD.
-  -
-    ticker: 2914.T
-    name: JAPAN TOBACCO INC.
-  -
-    ticker: 7267.T
-    name: HONDA MOTOR CO., LTD.
-  -
-    ticker: 4661.T
-    name: ORIENTAL LAND CO., LTD.
-  -
-    ticker: 6981.T
-    name: MURATA MANUFACTURING CO., LTD.
-  -
-    ticker: 6367.T
-    name: DAIKIN INDUSTRIES,LTD.
-  -
-    ticker: 8725.T
-    name: MS&AD INSURANCE GROUP HOLDINGS, INC.
-  -
-    ticker: 3382.T
-    name: SEVEN & I HOLDINGS CO., LTD.
-  -
-    ticker: 6301.T
-    name: KOMATSU LTD.
-  -
-    ticker: 8267.T
-    name: AEON CO., LTD.
-  -
-    ticker: 8801.T
-    name: MITSUI FUDOSAN CO., LTD.
-  -
-    ticker: 2802.T
-    name: AJINOMOTO CO., INC.
-  -
-    ticker: 8802.T
-    name: MITSUBISHI ESTATE CO., LTD.
-  -
-    ticker: 5803.T
-    name: FUJIKURA LTD.
-  -
-    ticker: 7751.T
-    name: CANON INC.
-  -
-    ticker: 8308.T
-    name: RESONA HOLDINGS, INC.
-  -
-    ticker: 5802.T
-    name: SUMITOMO ELECTRIC INDUSTRIES, LTD.
-  -
-    ticker: 9613.T
-    name: NOMURA RESEARCH INSTITUTE, LTD.
-  -
-    ticker: 1925.T
-    name: DAIWA HOUSE INDUSTRY CO., LTD.
-  -
-    ticker: 7832.T
-    name: BANDAI NAMCO HOLDINGS INC.
-  -
-    ticker: 8830.T
-    name: SUMITOMO REALTY & DEVELOPMENT CO., LTD.
-  -
-    ticker: 8309.T
-    name: SUMITOMO MITSUI TRUST GROUP, INC.
+conditions:
+  training_window:
+    start: 2018-04-24 09:00:00+09:00
+    end: 2018-12-31 09:00:00+09:00
+  evaluation_window:
+    start: 2019-01-04 09:00:00+09:00
+    end: 2019-12-30 09:00:00+09:00
 portfolio:
-  weights:
-    1332.T:
-      name: Nissui
-      weight: 0.101289
-    4061.T:
-      name: Denka
-      weight: 0.000000
-    5714.T:
-      name: DOWA Holdings
-      weight: 0.000000
-    7011.T:
-      name: Mitsubishi Heavy Industries
-      weight: 0.000000
-    8604.T:
-      name: NOMURA HOLDINGS, INC.
-      weight: 0.000000
-    4063.T:
-      name: Shin-Etsu Chemical
-      weight: 0.000000
-    7012.T:
-      name: Kawasaki Heavy Industries
-      weight: 0.000000
-    1605.T:
-      name: Inpex Corp
-      weight: 0.000000
-    4151.T:
-      name: KYOWA KIRIN CO., LTD.
-      weight: 0.000000
-    4502.T:
-      name: TAKEDA PHARMACEUTICAL CO., LTD.
-      weight: 0.000000
-    4503.T:
-      name: ASTELLAS PHARMA INC.
-      weight: 0.000000
-    4506.T:
-      name: SUMITOMO PHARMA CO., LTD.
-      weight: 0.200000
-    4507.T:
-      name: SHIONOGI & CO., LTD.
-      weight: 0.058072
-    4519.T:
-      name: CHUGAI PHARMACEUTICAL CO., LTD.
-      weight: 0.000000
-    4523.T:
-      name: EISAI CO., LTD.
-      weight: 0.000000
-    4568.T:
-      name: DAIICHI SANKYO CO., LTD.
-      weight: 0.000000
-    6479.T:
-      name: MINEBEA MITSUMI INC.
-      weight: 0.000000
-    6501.T:
-      name: HITACHI, LTD.
-      weight: 0.000000
-    6503.T:
-      name: MITSUBISHI ELECTRIC CORP.
-      weight: 0.000000
-    6504.T:
-      name: FUJI ELECTRIC CO., LTD.
-      weight: 0.000000
-    6506.T:
-      name: YASKAWA ELECTRIC CORP.
-      weight: 0.000000
-    6594.T:
-      name: NIDEC CORP.
-      weight: 0.000000
-    6645.T:
-      name: OMRON CORP.
-      weight: 0.000000
-    6674.T:
-      name: GS YUASA CORP.
-      weight: 0.000000
-    6701.T:
-      name: NEC CORP.
-      weight: 0.200000
-    6702.T:
-      name: FUJITSU LTD.
-      weight: 0.000000
-    6723.T:
-      name: RENESAS ELECTRONICS CORP.
-      weight: 0.000000
-    6724.T:
-      name: SEIKO EPSON CORP.
-      weight: 0.000000
-    6752.T:
-      name: PANASONIC HOLDINGS CORP.
-      weight: 0.000000
-    6753.T:
-      name: SHARP CORP.
-      weight: 0.000000
-    6758.T:
-      name: SONY GROUP CORP.
-      weight: 0.000000
-    6762.T:
-      name: TDK CORP.
-      weight: 0.000000
-    6770.T:
-      name: ALPS ALPINE CO., LTD.
-      weight: 0.000000
-    6841.T:
-      name: YOKOGAWA ELECTRIC CORP.
-      weight: 0.000000
-    6857.T:
-      name: ADVANTEST CORP.
-      weight: 0.000000
-    6861.T:
-      name: KEYENCE CORP.
-      weight: 0.000000
-    6902.T:
-      name: DENSO CORP.
-      weight: 0.000000
-    6952.T:
-      name: CASIO COMPUTER CO., LTD.
-      weight: 0.000000
-    6954.T:
-      name: FANUC CORP.
-      weight: 0.000000
-    6963.T:
-      name: ROHM CO., LTD.
-      weight: 0.000000
-    9984.T:
-      name: SOFTBANK GROUP CORP.
-      weight: 0.000000
-    8306.T:
-      name: MITSUBISHI UFJ FINANCIAL GROUP, INC.
-      weight: 0.000000
-    8316.T:
-      name: SUMITOMO MITSUI FINANCIAL GROUP, INC.
-      weight: 0.000000
-    7974.T:
-      name: NINTENDO CO., LTD.
-      weight: 0.000000
-    9983.T:
-      name: FAST RETAILING CO., LTD.
-      weight: 0.200000
-    9432.T:
-      name: NTT, INC.
-      weight: 0.000000
-    8411.T:
-      name: MIZUHO FINANCIAL GROUP, INC.
-      weight: 0.000000
-    8766.T:
-      name: TOKIO MARINE HOLDINGS, INC.
-      weight: 0.040640
-    8031.T:
-      name: MITSUI & CO., LTD.
-      weight: 0.000000
-    2914.T:
-      name: JAPAN TOBACCO INC.
-      weight: 0.000000
-    7267.T:
-      name: HONDA MOTOR CO., LTD.
-      weight: 0.000000
-    4661.T:
-      name: ORIENTAL LAND CO., LTD.
-      weight: 0.000000
-    6981.T:
-      name: MURATA MANUFACTURING CO., LTD.
-      weight: 0.000000
-    6367.T:
-      name: DAIKIN INDUSTRIES,LTD.
-      weight: 0.000000
-    8725.T:
-      name: MS&AD INSURANCE GROUP HOLDINGS, INC.
-      weight: 0.000000
-    3382.T:
-      name: SEVEN & I HOLDINGS CO., LTD.
-      weight: 0.000000
-    6301.T:
-      name: KOMATSU LTD.
-      weight: 0.000000
-    8267.T:
-      name: AEON CO., LTD.
-      weight: 0.000000
-    8801.T:
-      name: MITSUI FUDOSAN CO., LTD.
-      weight: 0.000000
-    2802.T:
-      name: AJINOMOTO CO., INC.
-      weight: 0.000000
-    8802.T:
-      name: MITSUBISHI ESTATE CO., LTD.
-      weight: 0.000000
-    5803.T:
-      name: FUJIKURA LTD.
-      weight: 0.000000
-    7751.T:
-      name: CANON INC.
-      weight: 0.000000
-    8308.T:
-      name: RESONA HOLDINGS, INC.
-      weight: 0.000000
-    5802.T:
-      name: SUMITOMO ELECTRIC INDUSTRIES, LTD.
-      weight: 0.000000
-    9613.T:
-      name: NOMURA RESEARCH INSTITUTE, LTD.
-      weight: 0.000000
-    1925.T:
-      name: DAIWA HOUSE INDUSTRY CO., LTD.
-      weight: 0.000000
-    7832.T:
-      name: BANDAI NAMCO HOLDINGS INC.
-      weight: 0.200000
-    8830.T:
-      name: SUMITOMO REALTY & DEVELOPMENT CO., LTD.
-      weight: 0.000000
-    8309.T:
-      name: SUMITOMO MITSUI TRUST GROUP, INC.
-      weight: 0.000000
   risk_metrics:
     annual_return: 0.123713
     volatility: 0.165566
     sharpe_ratio: 0.747210
     max_drawdown: -0.079597
-  training_window:
-    start: 2018-04-24T09:00:00+09:00
-    end: 2018-12-31T09:00:00+09:00
-  evaluation_window:
-    start: 2019-01-04T09:00:00+09:00
-    end: 2019-12-30T09:00:00+09:00
+  allocations:
+    summary:
+      total_constituents: 70
+      invested_constituents: 7
+      zero_weight_constituents: 63
+      top3_weight: 0.600000
+      top10_weight: 1.000001
+    top_holdings:
+      -
+        rank: 1
+        ticker: 4506.T
+        name: SUMITOMO PHARMA CO., LTD.
+        weight: 0.200000
+      -
+        rank: 2
+        ticker: 6701.T
+        name: NEC CORP.
+        weight: 0.200000
+      -
+        rank: 3
+        ticker: 9983.T
+        name: FAST RETAILING CO., LTD.
+        weight: 0.200000
+      -
+        rank: 4
+        ticker: 7832.T
+        name: BANDAI NAMCO HOLDINGS INC.
+        weight: 0.200000
+      -
+        rank: 5
+        ticker: 1332.T
+        name: Nissui
+        weight: 0.101289
+      -
+        rank: 6
+        ticker: 4507.T
+        name: SHIONOGI & CO., LTD.
+        weight: 0.058072
+      -
+        rank: 7
+        ticker: 8766.T
+        name: TOKIO MARINE HOLDINGS, INC.
+        weight: 0.040640
+      -
+        rank: 8
+        ticker: 4061.T
+        name: Denka
+        weight: 0.000000
+      -
+        rank: 9
+        ticker: 5714.T
+        name: DOWA Holdings
+        weight: 0.000000
+      -
+        rank: 10
+        ticker: 7011.T
+        name: Mitsubishi Heavy Industries
+        weight: 0.000000
+    smallest_active_weights:
+      -
+        ticker: 8766.T
+        name: TOKIO MARINE HOLDINGS, INC.
+        weight: 0.040640
+      -
+        ticker: 4507.T
+        name: SHIONOGI & CO., LTD.
+        weight: 0.058072
+      -
+        ticker: 1332.T
+        name: Nissui
+        weight: 0.101289
+      -
+        ticker: 4506.T
+        name: SUMITOMO PHARMA CO., LTD.
+        weight: 0.200000
+      -
+        ticker: 6701.T
+        name: NEC CORP.
+        weight: 0.200000
+    weight_buckets:
+      -
+        label: 10%以上
+        count: 5
+        weight_share: 0.901289
+        sample:
+          -
+            ticker: 4506.T
+            name: SUMITOMO PHARMA CO., LTD.
+            weight: 0.200000
+          -
+            ticker: 6701.T
+            name: NEC CORP.
+            weight: 0.200000
+          -
+            ticker: 9983.T
+            name: FAST RETAILING CO., LTD.
+            weight: 0.200000
+          -
+            ticker: 7832.T
+            name: BANDAI NAMCO HOLDINGS INC.
+            weight: 0.200000
+          -
+            ticker: 1332.T
+            name: Nissui
+            weight: 0.101289
+      -
+        label: 5%-10%
+        count: 1
+        weight_share: 0.058072
+        sample:
+          -
+            ticker: 4507.T
+            name: SHIONOGI & CO., LTD.
+            weight: 0.058072
+      -
+        label: 1%-5%
+        count: 1
+        weight_share: 0.040640
+        sample:
+          -
+            ticker: 8766.T
+            name: TOKIO MARINE HOLDINGS, INC.
+            weight: 0.040640
+      -
+        label: 1%未満
+        count: 63
+        weight_share: 0.000000
+        sample:
+          -
+            ticker: 4061.T
+            name: Denka
+            weight: 0.000000
+          -
+            ticker: 5714.T
+            name: DOWA Holdings
+            weight: 0.000000
+          -
+            ticker: 7011.T
+            name: Mitsubishi Heavy Industries
+            weight: 0.000000
+          -
+            ticker: 8604.T
+            name: NOMURA HOLDINGS, INC.
+            weight: 0.000000
+          -
+            ticker: 4063.T
+            name: Shin-Etsu Chemical
+            weight: 0.000000
+    by_ticker:
+      1332.T:
+        name: Nissui
+        weight: 0.101289
+      1605.T:
+        name: Inpex Corp
+        weight: 0.000000
+      1925.T:
+        name: DAIWA HOUSE INDUSTRY CO., LTD.
+        weight: 0.000000
+      2802.T:
+        name: AJINOMOTO CO., INC.
+        weight: 0.000000
+      2914.T:
+        name: JAPAN TOBACCO INC.
+        weight: 0.000000
+      3382.T:
+        name: SEVEN & I HOLDINGS CO., LTD.
+        weight: 0.000000
+      4061.T:
+        name: Denka
+        weight: 0.000000
+      4063.T:
+        name: Shin-Etsu Chemical
+        weight: 0.000000
+      4151.T:
+        name: KYOWA KIRIN CO., LTD.
+        weight: 0.000000
+      4502.T:
+        name: TAKEDA PHARMACEUTICAL CO., LTD.
+        weight: 0.000000
+      4503.T:
+        name: ASTELLAS PHARMA INC.
+        weight: 0.000000
+      4506.T:
+        name: SUMITOMO PHARMA CO., LTD.
+        weight: 0.200000
+      4507.T:
+        name: SHIONOGI & CO., LTD.
+        weight: 0.058072
+      4519.T:
+        name: CHUGAI PHARMACEUTICAL CO., LTD.
+        weight: 0.000000
+      4523.T:
+        name: EISAI CO., LTD.
+        weight: 0.000000
+      4568.T:
+        name: DAIICHI SANKYO CO., LTD.
+        weight: 0.000000
+      4661.T:
+        name: ORIENTAL LAND CO., LTD.
+        weight: 0.000000
+      5714.T:
+        name: DOWA Holdings
+        weight: 0.000000
+      5802.T:
+        name: SUMITOMO ELECTRIC INDUSTRIES, LTD.
+        weight: 0.000000
+      5803.T:
+        name: FUJIKURA LTD.
+        weight: 0.000000
+      6301.T:
+        name: KOMATSU LTD.
+        weight: 0.000000
+      6367.T:
+        name: DAIKIN INDUSTRIES,LTD.
+        weight: 0.000000
+      6479.T:
+        name: MINEBEA MITSUMI INC.
+        weight: 0.000000
+      6501.T:
+        name: HITACHI, LTD.
+        weight: 0.000000
+      6503.T:
+        name: MITSUBISHI ELECTRIC CORP.
+        weight: 0.000000
+      6504.T:
+        name: FUJI ELECTRIC CO., LTD.
+        weight: 0.000000
+      6506.T:
+        name: YASKAWA ELECTRIC CORP.
+        weight: 0.000000
+      6594.T:
+        name: NIDEC CORP.
+        weight: 0.000000
+      6645.T:
+        name: OMRON CORP.
+        weight: 0.000000
+      6674.T:
+        name: GS YUASA CORP.
+        weight: 0.000000
+      6701.T:
+        name: NEC CORP.
+        weight: 0.200000
+      6702.T:
+        name: FUJITSU LTD.
+        weight: 0.000000
+      6723.T:
+        name: RENESAS ELECTRONICS CORP.
+        weight: 0.000000
+      6724.T:
+        name: SEIKO EPSON CORP.
+        weight: 0.000000
+      6752.T:
+        name: PANASONIC HOLDINGS CORP.
+        weight: 0.000000
+      6753.T:
+        name: SHARP CORP.
+        weight: 0.000000
+      6758.T:
+        name: SONY GROUP CORP.
+        weight: 0.000000
+      6762.T:
+        name: TDK CORP.
+        weight: 0.000000
+      6770.T:
+        name: ALPS ALPINE CO., LTD.
+        weight: 0.000000
+      6841.T:
+        name: YOKOGAWA ELECTRIC CORP.
+        weight: 0.000000
+      6857.T:
+        name: ADVANTEST CORP.
+        weight: 0.000000
+      6861.T:
+        name: KEYENCE CORP.
+        weight: 0.000000
+      6902.T:
+        name: DENSO CORP.
+        weight: 0.000000
+      6952.T:
+        name: CASIO COMPUTER CO., LTD.
+        weight: 0.000000
+      6954.T:
+        name: FANUC CORP.
+        weight: 0.000000
+      6963.T:
+        name: ROHM CO., LTD.
+        weight: 0.000000
+      6981.T:
+        name: MURATA MANUFACTURING CO., LTD.
+        weight: 0.000000
+      7011.T:
+        name: Mitsubishi Heavy Industries
+        weight: 0.000000
+      7012.T:
+        name: Kawasaki Heavy Industries
+        weight: 0.000000
+      7267.T:
+        name: HONDA MOTOR CO., LTD.
+        weight: 0.000000
+      7751.T:
+        name: CANON INC.
+        weight: 0.000000
+      7832.T:
+        name: BANDAI NAMCO HOLDINGS INC.
+        weight: 0.200000
+      7974.T:
+        name: NINTENDO CO., LTD.
+        weight: 0.000000
+      8031.T:
+        name: MITSUI & CO., LTD.
+        weight: 0.000000
+      8267.T:
+        name: AEON CO., LTD.
+        weight: 0.000000
+      8306.T:
+        name: MITSUBISHI UFJ FINANCIAL GROUP, INC.
+        weight: 0.000000
+      8308.T:
+        name: RESONA HOLDINGS, INC.
+        weight: 0.000000
+      8309.T:
+        name: SUMITOMO MITSUI TRUST GROUP, INC.
+        weight: 0.000000
+      8316.T:
+        name: SUMITOMO MITSUI FINANCIAL GROUP, INC.
+        weight: 0.000000
+      8411.T:
+        name: MIZUHO FINANCIAL GROUP, INC.
+        weight: 0.000000
+      8604.T:
+        name: NOMURA HOLDINGS, INC.
+        weight: 0.000000
+      8725.T:
+        name: MS&AD INSURANCE GROUP HOLDINGS, INC.
+        weight: 0.000000
+      8766.T:
+        name: TOKIO MARINE HOLDINGS, INC.
+        weight: 0.040640
+      8801.T:
+        name: MITSUI FUDOSAN CO., LTD.
+        weight: 0.000000
+      8802.T:
+        name: MITSUBISHI ESTATE CO., LTD.
+        weight: 0.000000
+      8830.T:
+        name: SUMITOMO REALTY & DEVELOPMENT CO., LTD.
+        weight: 0.000000
+      9432.T:
+        name: NTT, INC.
+        weight: 0.000000
+      9613.T:
+        name: NOMURA RESEARCH INSTITUTE, LTD.
+        weight: 0.000000
+      9983.T:
+        name: FAST RETAILING CO., LTD.
+        weight: 0.200000
+      9984.T:
+        name: SOFTBANK GROUP CORP.
+        weight: 0.000000
+universe:
+  count: 70
+  members:
+    -
+      ticker: 1332.T
+      name: Nissui
+    -
+      ticker: 1605.T
+      name: Inpex Corp
+    -
+      ticker: 1925.T
+      name: DAIWA HOUSE INDUSTRY CO., LTD.
+    -
+      ticker: 2802.T
+      name: AJINOMOTO CO., INC.
+    -
+      ticker: 2914.T
+      name: JAPAN TOBACCO INC.
+    -
+      ticker: 3382.T
+      name: SEVEN & I HOLDINGS CO., LTD.
+    -
+      ticker: 4061.T
+      name: Denka
+    -
+      ticker: 4063.T
+      name: Shin-Etsu Chemical
+    -
+      ticker: 4151.T
+      name: KYOWA KIRIN CO., LTD.
+    -
+      ticker: 4502.T
+      name: TAKEDA PHARMACEUTICAL CO., LTD.
+    -
+      ticker: 4503.T
+      name: ASTELLAS PHARMA INC.
+    -
+      ticker: 4506.T
+      name: SUMITOMO PHARMA CO., LTD.
+    -
+      ticker: 4507.T
+      name: SHIONOGI & CO., LTD.
+    -
+      ticker: 4519.T
+      name: CHUGAI PHARMACEUTICAL CO., LTD.
+    -
+      ticker: 4523.T
+      name: EISAI CO., LTD.
+    -
+      ticker: 4568.T
+      name: DAIICHI SANKYO CO., LTD.
+    -
+      ticker: 4661.T
+      name: ORIENTAL LAND CO., LTD.
+    -
+      ticker: 5714.T
+      name: DOWA Holdings
+    -
+      ticker: 5802.T
+      name: SUMITOMO ELECTRIC INDUSTRIES, LTD.
+    -
+      ticker: 5803.T
+      name: FUJIKURA LTD.
+    -
+      ticker: 6301.T
+      name: KOMATSU LTD.
+    -
+      ticker: 6367.T
+      name: DAIKIN INDUSTRIES,LTD.
+    -
+      ticker: 6479.T
+      name: MINEBEA MITSUMI INC.
+    -
+      ticker: 6501.T
+      name: HITACHI, LTD.
+    -
+      ticker: 6503.T
+      name: MITSUBISHI ELECTRIC CORP.
+    -
+      ticker: 6504.T
+      name: FUJI ELECTRIC CO., LTD.
+    -
+      ticker: 6506.T
+      name: YASKAWA ELECTRIC CORP.
+    -
+      ticker: 6594.T
+      name: NIDEC CORP.
+    -
+      ticker: 6645.T
+      name: OMRON CORP.
+    -
+      ticker: 6674.T
+      name: GS YUASA CORP.
+    -
+      ticker: 6701.T
+      name: NEC CORP.
+    -
+      ticker: 6702.T
+      name: FUJITSU LTD.
+    -
+      ticker: 6723.T
+      name: RENESAS ELECTRONICS CORP.
+    -
+      ticker: 6724.T
+      name: SEIKO EPSON CORP.
+    -
+      ticker: 6752.T
+      name: PANASONIC HOLDINGS CORP.
+    -
+      ticker: 6753.T
+      name: SHARP CORP.
+    -
+      ticker: 6758.T
+      name: SONY GROUP CORP.
+    -
+      ticker: 6762.T
+      name: TDK CORP.
+    -
+      ticker: 6770.T
+      name: ALPS ALPINE CO., LTD.
+    -
+      ticker: 6841.T
+      name: YOKOGAWA ELECTRIC CORP.
+    -
+      ticker: 6857.T
+      name: ADVANTEST CORP.
+    -
+      ticker: 6861.T
+      name: KEYENCE CORP.
+    -
+      ticker: 6902.T
+      name: DENSO CORP.
+    -
+      ticker: 6952.T
+      name: CASIO COMPUTER CO., LTD.
+    -
+      ticker: 6954.T
+      name: FANUC CORP.
+    -
+      ticker: 6963.T
+      name: ROHM CO., LTD.
+    -
+      ticker: 6981.T
+      name: MURATA MANUFACTURING CO., LTD.
+    -
+      ticker: 7011.T
+      name: Mitsubishi Heavy Industries
+    -
+      ticker: 7012.T
+      name: Kawasaki Heavy Industries
+    -
+      ticker: 7267.T
+      name: HONDA MOTOR CO., LTD.
+    -
+      ticker: 7751.T
+      name: CANON INC.
+    -
+      ticker: 7832.T
+      name: BANDAI NAMCO HOLDINGS INC.
+    -
+      ticker: 7974.T
+      name: NINTENDO CO., LTD.
+    -
+      ticker: 8031.T
+      name: MITSUI & CO., LTD.
+    -
+      ticker: 8267.T
+      name: AEON CO., LTD.
+    -
+      ticker: 8306.T
+      name: MITSUBISHI UFJ FINANCIAL GROUP, INC.
+    -
+      ticker: 8308.T
+      name: RESONA HOLDINGS, INC.
+    -
+      ticker: 8309.T
+      name: SUMITOMO MITSUI TRUST GROUP, INC.
+    -
+      ticker: 8316.T
+      name: SUMITOMO MITSUI FINANCIAL GROUP, INC.
+    -
+      ticker: 8411.T
+      name: MIZUHO FINANCIAL GROUP, INC.
+    -
+      ticker: 8604.T
+      name: NOMURA HOLDINGS, INC.
+    -
+      ticker: 8725.T
+      name: MS&AD INSURANCE GROUP HOLDINGS, INC.
+    -
+      ticker: 8766.T
+      name: TOKIO MARINE HOLDINGS, INC.
+    -
+      ticker: 8801.T
+      name: MITSUI FUDOSAN CO., LTD.
+    -
+      ticker: 8802.T
+      name: MITSUBISHI ESTATE CO., LTD.
+    -
+      ticker: 8830.T
+      name: SUMITOMO REALTY & DEVELOPMENT CO., LTD.
+    -
+      ticker: 9432.T
+      name: NTT, INC.
+    -
+      ticker: 9613.T
+      name: NOMURA RESEARCH INSTITUTE, LTD.
+    -
+      ticker: 9983.T
+      name: FAST RETAILING CO., LTD.
+    -
+      ticker: 9984.T
+      name: SOFTBANK GROUP CORP.
