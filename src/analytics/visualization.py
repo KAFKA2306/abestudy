@@ -66,12 +66,12 @@ def _plot_no_data_message(ax, year, message, global_start, global_end):
         message,
         ha="center",
         va="center",
-        fontsize=18,
+        fontsize=16,
         color="dimgray",
     )
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title(str(year), fontsize=20, fontweight="bold")
+    ax.set_title(str(year), fontsize=18, fontweight="bold")
     ax.set_xlim(global_start, global_end)
     ax.set_ylim(0.1, 10)
     ax.set_yscale("log")
@@ -100,7 +100,7 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
             ax.set_xlabel("")
             ax.tick_params(labelbottom=False)
         else:
-            ax.set_xlabel("Date", fontsize=16)
+            ax.set_xlabel("Date", fontsize=14)
 
     def _no_data(ax: Axes, index: int, year, message):
         _plot_no_data_message(ax, year, message, global_start, global_end)
@@ -111,11 +111,6 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         ax.set_xlim(global_start, global_end)
         ax.set_ylim(0.1, 10)
         ax.set_yscale("log")
-
-        if year not in portfolios:
-            _no_data(ax, i, year, f"No data for {year}")
-            continue
-
         info = portfolios[year]
         weights = pd.Series({holding["ticker"]: holding["weight"] for holding in info["holdings"]}, dtype=float)
         available_tickers = [ticker for ticker in weights.index if ticker in closes.columns]
@@ -125,10 +120,6 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         series_map = {ticker: series for ticker, series in series_map.items() if not series.empty}
         start = max([info["start"], *(series.index.min() for series in series_map.values())])
         frame = pd.DataFrame(series_map).loc[lambda df: df.index >= start].ffill()
-        if frame.empty:
-            _no_data(ax, i, year, f"No data for {year} in range")
-            continue
-
         weights = (weights.loc[frame.columns] / weights.loc[frame.columns].sum()).astype(float)
         scaled = frame.divide(frame.iloc[0])
         portfolio_curve = scaled.mul(weights, axis=1).sum(axis=1)
@@ -165,18 +156,18 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         handles = [entry[1] for entry in legend_entries] + [abenomics_patch]
         labels = [entry[2] for entry in legend_entries] + ["Abenomics Period"]
 
-        ax.set_title(str(year), fontsize=20, fontweight="bold")
-        ax.set_ylabel("Indexed performance (base = 1)", fontsize=16)
+        ax.set_title(str(year), fontsize=18, fontweight="bold")
+        ax.set_ylabel("Indexed performance (base = 1)", fontsize=14)
         ax.grid(True, which="both", ls="-", alpha=0.5)
         ax.xaxis.set_major_locator(mdates.YearLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-        ax.tick_params(axis="x", rotation=30, labelsize=15)
-        ax.tick_params(axis="y", labelsize=15)
-        ax.legend(handles, labels, fontsize=16, ncol=1, frameon=True, loc="center left", bbox_to_anchor=(1, 0.5), facecolor="white", framealpha=1.0)
+        ax.tick_params(axis="x", rotation=30, labelsize=13)
+        ax.tick_params(axis="y", labelsize=13)
+        ax.legend(handles, labels, fontsize=14, ncol=1, frameon=True, loc="center left", bbox_to_anchor=(1, 0.5), facecolor="white", framealpha=1.0)
 
         _finalize_axis(ax, i)
 
-    fig.suptitle("Portfolio Performance by Year", fontsize=24, fontweight="bold")
+    fig.suptitle("Portfolio Performance by Year", fontsize=22, fontweight="bold")
     fig.tight_layout(rect=(0, 0, 0.92, 0.96))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, format=output_path.suffix.lstrip("."), dpi=150)
