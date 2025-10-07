@@ -151,8 +151,8 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
     fig, axes = plt.subplots(rows, cols, figsize=(cols * 12, rows * 5))
     axes = [axes] if isinstance(axes, Axes) else list(axes.ravel())
 
-    cmap = plt.get_cmap("viridis")
-    colors = {ticker: cmap(i / len(tickers)) for i, ticker in enumerate(tickers)}
+    cmap = plt.get_cmap("tab20") # Changed colormap to tab20
+    colors = {ticker: cmap(i % cmap.N) for i, ticker in enumerate(tickers)} # Use modulo for tab20
 
     # Convert Abenomics dates to Timestamp objects
     abenomics_start_ts = pd.Timestamp(ABENOMICS_START).tz_localize(None)
@@ -226,9 +226,11 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         # Plot Abenomics period
         ax.axvspan(abenomics_start_ts, abenomics_end_ts, color="gray", alpha=0.2, label="Abenomics Period")
 
+        lines = []
+        labels = []
         for ticker in scaled.columns:
             name = ticker_names.get(ticker, ticker)
-            ax.plot(
+            line, = ax.plot(
                 scaled.index,
                 scaled[ticker],
                 linewidth=1.5,
@@ -236,14 +238,49 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
                 color=colors.get(ticker, "#555555"),
                 label=f"{name} ({weights[ticker]:.1%})",
             )
+            lines.append(line)
+            labels.append(f"{name} ({weights[ticker]:.1%})")
 
-        ax.plot(
+        portfolio_line, = ax.plot(
             portfolio_curve.index,
             portfolio_curve,
             linewidth=2.5,
             color="black",
             label="Portfolio",
         )
+        lines.append(portfolio_line)
+        labels.append("Portfolio")
+
+        # Sort legend entries by final indexed performance
+        final_values = []
+        for line in lines:
+            if line.get_label() == "Portfolio":
+                final_values.append(portfolio_curve.iloc[-1] if not portfolio_curve.empty else -np.inf)
+            elif line.get_label() == "Abenomics Period": # Skip Abenomics Period from sorting
+                final_values.append(-np.inf) # Place it at the bottom
+            else:
+                ticker_label = line.get_label().split(' ')[0] # Extract ticker from label
+                if ticker_label in scaled.columns and not scaled[ticker_label].empty:
+                    final_values.append(scaled[ticker_label].iloc[-1])
+                else:
+                    final_values.append(-np.inf) # Handle cases where data might be missing
+
+        # Filter out Abenomics Period from sorting and re-add it later
+        sorted_items = sorted([(val, line, label) for val, line, label in zip(final_values, lines, labels) if label != "Abenomics Period"], key=lambda item: item[0], reverse=True)
+        sorted_lines = [item[1] for item in sorted_items]
+        sorted_labels = [item[2] for item in sorted_items]
+
+        # Add Abenomics Period back if it was present
+        abenomics_handle = None
+        abenomics_label = None
+        for line, label in zip(lines, labels):
+            if label == "Abenomics Period":
+                abenomics_handle = line
+                abenomics_label = label
+                break
+        if abenomics_handle and abenomics_label:
+            sorted_lines.append(abenomics_handle)
+            sorted_labels.append(abenomics_label)
 
         ax.set_title(str(year), fontsize=14, fontweight="bold")
         ax.set_ylabel("Indexed performance (base = 100)", fontsize=10)
@@ -252,7 +289,7 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         ax.tick_params(axis="x", rotation=30, labelsize=9)
         ax.tick_params(axis="y", labelsize=9)
-        ax.legend(fontsize=10, ncol=2, frameon=True, loc="upper left", facecolor="white", framealpha=1.0)
+        ax.legend(sorted_lines, sorted_labels, fontsize=10, ncol=1, frameon=True, loc='center left', bbox_to_anchor=(1, 0.5), facecolor="white", framealpha=1.0)
 
         # Hide x-axis labels for non-last subplots
         if i < len(full_year_range) - 1:
@@ -266,7 +303,7 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         fig.delaxes(ax)
 
     fig.suptitle("Portfolio Performance by Year", fontsize=18, fontweight="bold")
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    fig.tight_layout(rect=(0, 0, 0.85, 0.96))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, format=output_path.suffix.lstrip("."), dpi=150)
     plt.close(fig)
