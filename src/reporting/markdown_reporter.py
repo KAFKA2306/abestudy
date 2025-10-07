@@ -60,8 +60,6 @@ def render_summary_report(
     end_year = rows[-1]["year"]
 
     holdings_by_year = top_holdings or {}
-    latest_year_key = str(latest_year["year"])
-    latest_holdings = list(holdings_by_year.get(latest_year_key, []))
 
     lines: List[str] = [
         f"# ポートフォリオ年次パフォーマンス概要（{start_year}-{end_year}）",
@@ -107,18 +105,30 @@ def render_summary_report(
         ]
     )
 
-    lines.extend([f"## {latest_year['year']}年ポートフォリオ上位10銘柄", ""])
-    if latest_holdings:
-        for rank, holding in enumerate(latest_holdings[:10], start=1):
-            ticker = holding.get("ticker", "")
-            name = holding.get("name") or ticker
-            weight = float(holding.get("weight", float("nan")))
-            lines.append(
-                f"- {rank}. {name}（{ticker}）: {_percent(weight)}"
-            )
-    else:
-        lines.append("- データが不足しています。")
+    years = (
+        sorted(holdings_by_year, key=int)
+        if holdings_by_year
+        else [str(latest_year["year"])]
+    )
 
-    lines.append("")
+    for year in years:
+        holdings = list(holdings_by_year.get(year, []))
+        lines.extend([f"## {year}年ポートフォリオ上位10銘柄", ""])
+        if holdings:
+            for default_rank, holding in enumerate(holdings[:10], start=1):
+                ticker = holding.get("ticker", "")
+                name = holding.get("name") or ticker
+                weight = float(holding.get("weight", float("nan")))
+                rank = holding.get("rank", default_rank)
+                try:
+                    rank = int(rank)
+                except (TypeError, ValueError):
+                    rank = default_rank
+                lines.append(
+                    f"- {rank}. {name}（{ticker}）: {_percent(weight)}"
+                )
+        else:
+            lines.append("- データが不足しています。")
+        lines.append("")
 
     return "\n".join(lines)
