@@ -12,7 +12,7 @@ uv run python -m src.run_visualization
 - 市場データ: 日経平均採用銘柄の日次終値・出来高（2009-01-01〜2025-09-31）、yfinance から取得し Asia/Tokyo でタイムスタンプ化
 - ユニバース: 年初時点の「日経平均採用銘柄」スナップショットを使用、銘柄比率は 0〜20%、空売り禁止
 - 推定手法: 年次リバランスの平均分散最適化（ウォークフォワード）
-- レポート形式: YAML（period、universe、portfolio 配下に weights・risk_metrics・classification、数値は小数点以下 3 桁）
+- レポート形式: YAML（period、universe、portfolio 配下に weights・risk_metrics・数値は小数点以下 2 桁）
 
 ## ワークフロー概要
 ```
