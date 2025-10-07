@@ -1,5 +1,7 @@
 from pathlib import Path
 import math
+import os
+import warnings
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -45,7 +47,7 @@ def _load_portfolios():
     return portfolios
 
 
-def _load_closes(tickers, start=None, end=None):
+def _load_closes(tickers, start=None, end=None, allow_downloads=None):
     if not tickers:
         return pd.DataFrame()
 
@@ -64,7 +66,10 @@ def _load_closes(tickers, start=None, end=None):
                 series_map[ticker] = close_series.sort_index()
 
     missing = [ticker for ticker in tickers if ticker not in series_map]
-    if missing and start is not None and end is not None:
+    if allow_downloads is None:
+        allow_downloads = os.getenv("ABESTUDY_ALLOW_REMOTE_DATA", "").lower() in {"1", "true", "yes"}
+
+    if missing and allow_downloads and start is not None and end is not None:
         download_start = (start - pd.Timedelta(days=7)).strftime("%Y-%m-%d")
         download_end = (end + pd.Timedelta(days=7)).strftime("%Y-%m-%d")
         for ticker in missing:
@@ -85,6 +90,12 @@ def _load_closes(tickers, start=None, end=None):
             if getattr(close_series.index, "tz", None) is not None:
                 close_series.index = close_series.index.tz_localize(None)
             series_map[ticker] = close_series.sort_index()
+    elif missing:
+        warnings.warn(
+            "Skipping download for tickers without local data: " + ", ".join(sorted(missing)),
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
     closes = pd.DataFrame(series_map)
     closes = closes.sort_index()
@@ -147,8 +158,26 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
 
         info = portfolios[year]
         weights = pd.Series({holding["ticker"]: holding["weight"] for holding in info["holdings"]}, dtype=float)
+        available_tickers = [ticker for ticker in weights.index if not closes.empty and ticker in closes.columns]
+
+        if not available_tickers:
+            ax.text(
+                0.5,
+                0.5,
+                "No local price data",
+                ha="center",
+                va="center",
+                fontsize=11,
+                color="dimgray",
+            )
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title(str(year))
+            continue
+
+        weights = weights.loc[available_tickers]
         weights = weights / weights.sum()
-        subset = closes.loc[:, weights.index] if not closes.empty else pd.DataFrame()
+        subset = closes.loc[:, available_tickers]
 
         valid_columns = []
         start_dates = []
