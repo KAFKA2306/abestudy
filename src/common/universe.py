@@ -43,8 +43,6 @@ def universe_for_date(as_of) -> Dict[str, str]:
             latest = date
         else:
             break
-    if latest is None:
-        return {}
     return dict(_SNAPSHOTS[latest])
 
 
