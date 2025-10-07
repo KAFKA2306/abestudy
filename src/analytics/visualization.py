@@ -9,8 +9,9 @@ from matplotlib.axes import Axes
 import pandas as pd
 import yaml
 import yfinance as yf
+import numpy as np
 
-from ..common.config import DATA_RAW, REPORT_DIR, TICKER_NAMES_FILE
+from ..common.config import DATA_RAW, REPORT_DIR, TICKER_NAMES_FILE, ABENOMICS_START, ABENOMICS_END
 from ..data_io.yaml_store import load_frames
 
 
@@ -92,7 +93,6 @@ def _load_closes(tickers, start=None, end=None, allow_downloads=None):
             if history.empty or "Close" not in history:
                 continue
             close_series = history["Close"].copy()
-            close_series.index = pd.to_datetime(close_series.index)
             if getattr(close_series.index, "tz", None) is not None:
                 close_series.index = close_series.index.tz_localize(None)
             series_map[ticker] = close_series.sort_index()
@@ -109,21 +109,29 @@ def _load_closes(tickers, start=None, end=None, allow_downloads=None):
         closes.index = closes.index.tz_localize(None)
     return closes
 
+def _plot_no_data_message(ax, year, message, global_start, global_end):
+    ax.text(
+        0.5,
+        0.5,
+        message,
+        ha="center",
+        va="center",
+        fontsize=12,
+        color="dimgray",
+    )
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_title(str(year), fontsize=14, fontweight="bold")
+    ax.set_xlim(global_start, global_end)
+    ax.set_ylim(10, 1000)
+    ax.set_yscale('log')
 
 def create_yearly_portfolio_panels(output_path: Path) -> Path:
     ticker_names = _load_ticker_names()
     portfolios = _load_portfolios(ticker_names)
     if not portfolios:
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.text(
-            0.5,
-            0.5,
-            "No portfolio data available",
-            ha="center",
-            va="center",
-            fontsize=12,
-            color="dimgray",
-        )
+        _plot_no_data_message(ax, "", "No portfolio data available", None, None) # No year for overall message
         ax.axis("off")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         fig.tight_layout()
@@ -135,7 +143,7 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
     full_year_range = list(range(min(years_with_data), max(years_with_data) + 1))
     tickers = sorted({holding["ticker"] for info in portfolios.values() for holding in info["holdings"]})
     global_start = min(info["start"] for info in portfolios.values())
-    global_end = max(info["end"] for info in portfolios.values())
+    global_end = pd.Timestamp.now().normalize() # Extend to today
     closes = _load_closes(tickers, global_start, global_end) if tickers else pd.DataFrame()
 
     cols = 1
@@ -146,21 +154,22 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
     cmap = plt.get_cmap("viridis")
     colors = {ticker: cmap(i / len(tickers)) for i, ticker in enumerate(tickers)}
 
-    for ax, year in zip(axes, full_year_range):
+    # Convert Abenomics dates to Timestamp objects
+    abenomics_start_ts = pd.Timestamp(ABENOMICS_START).tz_localize(None)
+    abenomics_end_ts = pd.Timestamp(ABENOMICS_END).tz_localize(None)
+
+    for i, (ax, year) in enumerate(zip(axes, full_year_range)):
         ax.set_facecolor("#f9f9f9")
+        ax.set_xlim(global_start, global_end)
+        ax.set_ylim(10, 1000)
+        ax.set_yscale('log')
+
         if year not in portfolios:
-            ax.text(
-                0.5,
-                0.5,
-                f"No data for {year}",
-                ha="center",
-                va="center",
-                fontsize=12,
-                color="dimgray",
-            )
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_title(str(year), fontsize=14, fontweight="bold")
+            _plot_no_data_message(ax, year, f"No data for {year}", global_start, global_end)
+            # Hide x-axis labels for non-last subplots
+            if i < len(full_year_range) - 1:
+                ax.set_xlabel('')
+                ax.tick_params(labelbottom=False)
             continue
 
         info = portfolios[year]
@@ -168,18 +177,11 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         available_tickers = [ticker for ticker in weights.index if not closes.empty and ticker in closes.columns]
 
         if not available_tickers:
-            ax.text(
-                0.5,
-                0.5,
-                "No local price data",
-                ha="center",
-                va="center",
-                fontsize=12,
-                color="dimgray",
-            )
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_title(str(year), fontsize=14, fontweight="bold")
+            _plot_no_data_message(ax, year, "No local price data", global_start, global_end)
+            # Hide x-axis labels for non-last subplots
+            if i < len(full_year_range) - 1:
+                ax.set_xlabel('')
+                ax.tick_params(labelbottom=False)
             continue
 
         weights = weights.loc[available_tickers]
@@ -196,18 +198,11 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
             start_dates.append(cleaned.index.min())
 
         if not valid_columns:
-            ax.text(
-                0.5,
-                0.5,
-                "Insufficient price history",
-                ha="center",
-                va="center",
-                fontsize=12,
-                color="dimgray",
-            )
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_title(str(year), fontsize=14, fontweight="bold")
+            _plot_no_data_message(ax, year, "Insufficient price history", global_start, global_end)
+            # Hide x-axis labels for non-last subplots
+            if i < len(full_year_range) - 1:
+                ax.set_xlabel('')
+                ax.tick_params(labelbottom=False)
             continue
 
         subset = subset.loc[:, valid_columns]
@@ -216,24 +211,20 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         subset = subset.ffill()
 
         if subset.empty:
-            ax.text(
-                0.5,
-                0.5,
-                "No prices after start date",
-                ha="center",
-                va="center",
-                fontsize=12,
-                color="dimgray",
-            )
-            ax.set_xticks([])
-            ax.set_yticks([])
-            ax.set_title(str(year), fontsize=14, fontweight="bold")
+            _plot_no_data_message(ax, year, "No prices after start date", global_start, global_end)
+            # Hide x-axis labels for non-last subplots
+            if i < len(full_year_range) - 1:
+                ax.set_xlabel('')
+                ax.tick_params(labelbottom=False)
             continue
 
         base = subset.iloc[0]
         normalized = subset.divide(base)
         scaled = normalized * 100
         portfolio_curve = scaled.mul(weights, axis=1).sum(axis=1)
+
+        # Plot Abenomics period
+        ax.axvspan(abenomics_start_ts, abenomics_end_ts, color="gray", alpha=0.2, label="Abenomics Period")
 
         for ticker in scaled.columns:
             name = ticker_names.get(ticker, ticker)
@@ -256,14 +247,19 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
 
         ax.set_title(str(year), fontsize=14, fontweight="bold")
         ax.set_ylabel("Indexed performance (base = 100)", fontsize=10)
-        ax.set_xlabel("Date", fontsize=10)
-        ax.grid(alpha=0.5, linestyle="--", linewidth=0.8)
+        ax.grid(True, which="both", ls="-", alpha=0.5) # Ensure both major and minor grid lines
         ax.xaxis.set_major_locator(mdates.AutoDateLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         ax.tick_params(axis="x", rotation=30, labelsize=9)
         ax.tick_params(axis="y", labelsize=9)
-        ax.legend(fontsize=9, ncol=2, frameon=True, loc="upper left", facecolor="white", framealpha=0.8)
-        ax.set_xlim(global_start, global_end)
+        ax.legend(fontsize=10, ncol=2, frameon=True, loc="upper left", facecolor="white", framealpha=1.0)
+
+        # Hide x-axis labels for non-last subplots
+        if i < len(full_year_range) - 1:
+            ax.set_xlabel('')
+            ax.tick_params(labelbottom=False)
+        else:
+            ax.set_xlabel("Date", fontsize=10)
 
 
     for ax in axes[len(full_year_range):]:
