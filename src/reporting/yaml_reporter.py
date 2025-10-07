@@ -57,8 +57,8 @@ def _sort_universe(universe):
     )
 
 
-def _weight_entries(weights):
-    return [
+def _describe_weights(weights):
+    entries = [
         {
             "ticker": ticker,
             "name": data.get("name", ""),
@@ -66,93 +66,75 @@ def _weight_entries(weights):
         }
         for ticker, data in weights.items()
     ]
-
-
-def _weights_by_ticker(entries):
-    return {
-        entry["ticker"]: {"name": entry["name"], "weight": entry["weight"]}
-        for entry in sorted(entries, key=lambda item: item["ticker"])
-    }
-
-
-def _top_holdings(entries, limit=10):
     ranked = sorted(entries, key=lambda item: item["weight"], reverse=True)
-    return [
-        {
-            "rank": position,
-            "ticker": entry["ticker"],
-            "name": entry["name"],
-            "weight": entry["weight"],
-        }
-        for position, entry in enumerate(ranked[:limit], start=1)
-    ]
+    active = [entry for entry in ranked if entry["weight"] > 0]
 
+    def _basic(entries):
+        return [
+            {
+                "ticker": entry["ticker"],
+                "name": entry["name"],
+                "weight": entry["weight"],
+            }
+            for entry in entries
+        ]
 
-def _tail_holdings(entries, limit=5):
-    active = [entry for entry in entries if entry["weight"] > 0]
-    ranked = sorted(active, key=lambda item: item["weight"])
-    return [
-        {
-            "ticker": entry["ticker"],
-            "name": entry["name"],
-            "weight": entry["weight"],
-        }
-        for entry in ranked[:limit]
-    ]
-
-
-def _weight_buckets(entries):
     buckets = [
         ("10%以上", 0.10, None),
         ("5%-10%", 0.05, 0.10),
         ("1%-5%", 0.01, 0.05),
         ("1%未満", 0.0, 0.01),
     ]
-    ranked = sorted(entries, key=lambda item: item["weight"], reverse=True)
-    results = []
-    for label, lower, upper in buckets:
-        members = [
-            entry
-            for entry in ranked
-            if entry["weight"] >= lower and (upper is None or entry["weight"] < upper)
-        ]
-        results.append(
-            {
-                "label": label,
-                "count": len(members),
-                "weight_share": sum(entry["weight"] for entry in members),
-                "sample": [
-                    {
-                        "ticker": entry["ticker"],
-                        "name": entry["name"],
-                        "weight": entry["weight"],
-                    }
-                    for entry in members[:5]
-                ],
-            }
-        )
-    return results
+    weight_buckets = [
+        {
+            "label": label,
+            "count": len(
+                members := [
+                    entry
+                    for entry in ranked
+                    if entry["weight"] >= lower
+                    and (upper is None or entry["weight"] < upper)
+                ]
+            ),
+            "weight_share": sum(entry["weight"] for entry in members),
+            "sample": _basic(members[:5]),
+        }
+        for label, lower, upper in buckets
+    ]
 
+    by_ticker = {
+        entry["ticker"]: {"name": entry["name"], "weight": entry["weight"]}
+        for entry in sorted(entries, key=lambda item: item["ticker"])
+    }
 
-def _allocation_summary(entries):
-    total = len(entries)
-    active = [entry for entry in entries if entry["weight"] > 0]
-    inactive = total - len(active)
-    ranked = sorted(entries, key=lambda item: item["weight"], reverse=True)
-    top3 = sum(entry["weight"] for entry in ranked[:3])
-    top10 = sum(entry["weight"] for entry in ranked[:10])
     return {
-        "total_constituents": total,
-        "invested_constituents": len(active),
-        "zero_weight_constituents": inactive,
-        "top3_weight": top3,
-        "top10_weight": top10,
+        "summary": {
+            "total_constituents": len(entries),
+            "invested_constituents": len(active),
+            "zero_weight_constituents": len(entries) - len(active),
+            "top3_weight": sum(entry["weight"] for entry in ranked[:3]),
+            "top10_weight": sum(entry["weight"] for entry in ranked[:10]),
+        },
+        "top_holdings": [
+            {
+                "rank": position,
+                "ticker": entry["ticker"],
+                "name": entry["name"],
+                "weight": entry["weight"],
+            }
+            for position, entry in enumerate(ranked[:10], start=1)
+        ],
+        "smallest_active_weights": _basic(
+            sorted(active, key=lambda item: item["weight"])[:5]
+        ),
+        "weight_buckets": weight_buckets,
+        "by_ticker": by_ticker,
     }
 
 
 def _format_year_report(year, payload):
     portfolio = payload["portfolio"]
-    weight_entries = _weight_entries(portfolio["weights"])
+    allocations = _describe_weights(portfolio["weights"])
     return {
         "year": year,
         "period": payload["period"],
@@ -162,13 +144,7 @@ def _format_year_report(year, payload):
         },
         "portfolio": {
             "risk_metrics": portfolio.get("risk_metrics", {}),
-            "allocations": {
-                "summary": _allocation_summary(weight_entries),
-                "top_holdings": _top_holdings(weight_entries),
-                "smallest_active_weights": _tail_holdings(weight_entries),
-                "weight_buckets": _weight_buckets(weight_entries),
-                "by_ticker": _weights_by_ticker(weight_entries),
-            },
+            "allocations": allocations,
         },
         "universe": {
             "count": len(payload.get("universe", [])),
