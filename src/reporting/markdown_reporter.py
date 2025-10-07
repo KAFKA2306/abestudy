@@ -102,26 +102,19 @@ def render_summary_report(
         ]
     )
 
-    years = (
-        sorted(holdings_by_year, key=int)
-        if holdings_by_year
-        else [str(latest_year["year"])]
-    )
+    years = sorted(holdings_by_year, key=int)
 
     for year in years:
         holdings = list(holdings_by_year.get(year, []))
         lines.extend([f"## {year}年ポートフォリオ上位10銘柄", ""])
-        if holdings:
-            for default_rank, holding in enumerate(holdings[:10], start=1):
-                ticker = holding.get("ticker", "")
-                name = holding.get("name") or ticker
-                weight = float(holding.get("weight", float("nan")))
-                rank = int(holding.get("rank", default_rank))
-                lines.append(
-                    f"- {rank}. {name}（{ticker}）: {_percent(weight)}"
-                )
-        else:
-            lines.append("- データが不足しています。")
+        for default_rank, holding in enumerate(holdings[:10], start=1):
+            ticker = holding.get("ticker", "")
+            name = holding.get("name") or ticker
+            weight = float(holding.get("weight", float("nan")))
+            rank = int(holding.get("rank", default_rank))
+            lines.append(
+                f"- {rank}. {name}（{ticker}）: {_percent(weight)}"
+            )
         lines.append("")
 
     return "\n".join(lines)
