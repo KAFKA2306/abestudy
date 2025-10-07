@@ -14,13 +14,6 @@ def _annualize_volatility(daily_vol: float) -> float:
 
 
 def _clean_training_returns(returns: pd.DataFrame) -> pd.DataFrame:
-    """Remove missing values while preserving available tickers.
-
-    Rows containing any missing values are dropped because the optimizer
-    requires aligned observations to compute the covariance matrix. Columns
-    without any observed data are dropped to avoid propagating NaNs.
-    """
-
     if returns.empty:
         return returns
 
@@ -34,9 +27,6 @@ def _weight_sharpe(returns: pd.DataFrame, max_weight: float) -> pd.Series:
     tickers = list(returns.columns)
 
     if cleaned.empty:
-        # Fall back to an equal weight allocation when there is insufficient
-        # history. The caller is expected to guard against this situation, but
-        # we still guard to keep the API robust.
         equal = np.full(len(tickers), 1 / len(tickers))
         return pd.Series(equal, index=tickers)
 
@@ -62,8 +52,6 @@ def _weight_sharpe(returns: pd.DataFrame, max_weight: float) -> pd.Series:
     weights = np.clip(weights, 0, max_weight)
     weights = weights / weights.sum()
 
-    # Reconstruct the full ticker universe, assigning zero weight to tickers
-    # that were dropped during cleaning.
     series = pd.Series(0.0, index=tickers)
     for ticker, weight in zip(cleaned.columns, weights):
         series.loc[ticker] = weight
