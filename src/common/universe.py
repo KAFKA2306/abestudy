@@ -15,6 +15,10 @@ TICKERS = [
     "8058.T",
     "8591.T",
     "8267.T",
+    "3382.T",
+    "6301.T",
+    "4502.T",
+    "9433.T",
 ]
 CLASSIFICATION = {
     "7203.T": "automobile",
@@ -33,4 +37,8 @@ CLASSIFICATION = {
     "8058.T": "trading",
     "8591.T": "leasing",
     "8267.T": "consumer_retail",
+    "3382.T": "consumer_retail",
+    "6301.T": "industrial",
+    "4502.T": "pharmaceutical",
+    "9433.T": "telecom",
 }
