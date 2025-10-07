@@ -7,6 +7,6 @@ uv run python -m src.run_pipeline
 uv run python -m src.run_visualization
 ```
 
-## 結果の例
+## 年次ポートフォリオの例
 
 ![年次最適ポートフォリオの例](reports/figures/yearly_portfolio_longrun.svg)
