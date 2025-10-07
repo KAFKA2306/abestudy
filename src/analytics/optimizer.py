@@ -60,28 +60,28 @@ def build_yearly_portfolios(frames, classification, years, max_weight, names):
     closes = closes.sort_index()
     returns = closes.pct_change().dropna()
     tickers = list(frames.keys())
-    results = {}
-    for year in years:
+    universe = [
+        {
+            "ticker": ticker,
+            "name": names.get(ticker, ""),
+            "asset_class": classification.get(ticker, "unclassified"),
+        }
+        for ticker in tickers
+    ]
+
+    def _build(year):
         year_returns = returns.loc[str(year)]
         if year_returns.empty:
-            continue
+            return None
         weights = _weight_sharpe(year_returns, max_weight)
-        metrics = _metrics(year_returns, weights)
-        classes = _classification(weights, classification)
-        results[year] = {
+        return {
             "period": {"start": f"{year}-01-01", "end": f"{year}-12-31"},
-            "universe": [
-                {
-                    "ticker": ticker,
-                    "name": names.get(ticker, ""),
-                    "asset_class": classification.get(ticker, "unclassified"),
-                }
-                for ticker in tickers
-            ],
+            "universe": universe,
             "portfolio": {
                 "weights": _weight_entries(weights, names, tickers),
-                "risk_metrics": metrics,
-                "classification": classes,
+                "risk_metrics": _metrics(year_returns, weights),
+                "classification": _classification(weights, classification),
             },
         }
-    return results
+
+    return {year: payload for year in years if (payload := _build(year))}
