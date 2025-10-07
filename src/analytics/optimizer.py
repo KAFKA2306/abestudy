@@ -124,7 +124,7 @@ def build_yearly_portfolios(
 ):
     closes = pd.DataFrame({ticker: frame["close"] for ticker, frame in frames.items()})
     closes = closes.sort_index()
-    returns = closes.pct_change().dropna()
+    returns = closes.pct_change(fill_method=None).dropna()
     results = {}
     tz = returns.index.tz
     for year in years:
