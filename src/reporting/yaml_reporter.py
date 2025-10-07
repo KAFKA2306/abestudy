@@ -163,18 +163,17 @@ def write_reports(results, directory):
         (directory / f"{year}.yaml").write_text(
             "\n".join(_yaml_lines(payload)) + "\n", encoding="utf-8"
         )
-    if formatted:
-        summary = {
-            str(year): payload["portfolio"]["risk_metrics"]
-            for year, payload in formatted.items()
-        }
-        holdings = {
-            str(year): payload["portfolio"]["allocations"]["top_holdings"]
-            for year, payload in formatted.items()
-        }
-        (directory / "summary.yaml").write_text(
-            "\n".join(_yaml_lines({"years": summary})) + "\n",
-            encoding="utf-8",
-        )
-        report = render_summary_report(summary, holdings)
-        (directory / "summary_report.md").write_text(report, encoding="utf-8")
+    summary = {
+        str(year): payload["portfolio"]["risk_metrics"]
+        for year, payload in formatted.items()
+    }
+    holdings = {
+        str(year): payload["portfolio"]["allocations"]["top_holdings"]
+        for year, payload in formatted.items()
+    }
+    (directory / "summary.yaml").write_text(
+        "\n".join(_yaml_lines({"years": summary})) + "\n",
+        encoding="utf-8",
+    )
+    report = render_summary_report(summary, holdings)
+    (directory / "summary_report.md").write_text(report, encoding="utf-8")

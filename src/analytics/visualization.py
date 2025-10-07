@@ -13,8 +13,7 @@ from ..data_io.yaml_store import load_frames
 
 
 def _load_ticker_names():
-    data = yaml.safe_load(TICKER_NAMES_FILE.read_text(encoding="utf-8"))
-    return data or {}
+    return yaml.safe_load(TICKER_NAMES_FILE.read_text(encoding="utf-8"))
 
 
 def _load_portfolios(ticker_names):
@@ -22,8 +21,8 @@ def _load_portfolios(ticker_names):
     for path in sorted(REPORT_DIR.glob("*.yaml")):
         payload = yaml.safe_load(path.read_text(encoding="utf-8"))
         year = int(payload["year"])
-        allocation = payload.get("portfolio", {}).get("allocations", {})
-        holdings = allocation.get("top_holdings", [])
+        allocation = payload["portfolio"]["allocations"]
+        holdings = allocation["top_holdings"]
         ordered = sorted(holdings, key=lambda item: float(item.get("weight", 0.0)), reverse=True)[:10]
         parsed_holdings = [
             {
@@ -33,9 +32,9 @@ def _load_portfolios(ticker_names):
             }
             for item in ordered
         ]
-        evaluation_window = payload.get("conditions", {}).get("evaluation_window", {})
-        start = evaluation_window.get("start")
-        end = evaluation_window.get("end")
+        evaluation_window = payload["conditions"]["evaluation_window"]
+        start = evaluation_window["start"]
+        end = evaluation_window["end"]
         start_ts = pd.Timestamp(start).tz_localize(None)
         end_ts = pd.Timestamp(end).tz_localize(None)
         portfolios[year] = {"holdings": parsed_holdings, "start": start_ts, "end": end_ts}
@@ -49,10 +48,9 @@ def _load_closes(tickers, start=None, end=None, allow_downloads=None):
 
     frames = load_frames(available_locally, DATA_RAW)
     for ticker, frame in frames.items():
-        if "close" in frame:
-            close_series = frame["close"].copy()
-            close_series.index = pd.to_datetime(close_series.index)
-            series_map[ticker] = close_series.sort_index()
+        close_series = frame["close"].copy()
+        close_series.index = pd.to_datetime(close_series.index)
+        series_map[ticker] = close_series.sort_index()
 
     missing = [ticker for ticker in tickers if ticker not in series_map]
     closes = pd.DataFrame(series_map)
@@ -113,7 +111,7 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         ax.set_yscale("log")
         info = portfolios[year]
         weights = pd.Series({holding["ticker"]: holding["weight"] for holding in info["holdings"]}, dtype=float)
-        available_tickers = [ticker for ticker in weights.index if not closes.empty and ticker in closes.columns]
+        available_tickers = [ticker for ticker in weights.index if ticker in closes.columns]
         weights = weights.loc[available_tickers]
         subset = closes[available_tickers]
         series_map = {ticker: series.dropna() for ticker, series in subset.items()}
