@@ -12,7 +12,7 @@ from .common.config import (
     LOOKBACK_DAYS,
     MIN_TRAINING_OBSERVATIONS,
 )
-from .common.universe import TICKERS, CLASSIFICATION
+from .common.universe import TICKERS
 from .ingestion.yfinance_client import collect
 from .data_io.yaml_store import save_frames, load_frames
 from .analytics.optimizer import build_yearly_portfolios
@@ -26,7 +26,6 @@ def main():
     loaded = load_frames(TICKERS, DATA_RAW)
     portfolios = build_yearly_portfolios(
         loaded,
-        CLASSIFICATION,
         YEARS,
         MAX_WEIGHT,
         names,

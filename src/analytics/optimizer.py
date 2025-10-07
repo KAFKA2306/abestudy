@@ -115,7 +115,6 @@ def _weight_entries(weights, names, tickers):
 
 def build_yearly_portfolios(
     frames,
-    classification,
     years,
     max_weight,
     names,
@@ -150,7 +149,6 @@ def build_yearly_portfolios(
 
         weights = _weight_sharpe(training_returns, max_weight)
         metrics = _metrics(year_returns, weights)
-        classes = _classification(weights, classification)
 
         training_start = cleaned_training.index.min()
         training_end = cleaned_training.index.max()
@@ -163,14 +161,12 @@ def build_yearly_portfolios(
                 {
                     "ticker": ticker,
                     "name": names.get(ticker, ""),
-                    "asset_class": classification.get(ticker, "unclassified"),
                 }
                 for ticker in tickers
             ],
             "portfolio": {
                 "weights": _weight_entries(weights, names, tickers),
                 "risk_metrics": metrics,
-                "classification": classes,
                 "training_window": {
                     "start": training_start.isoformat() if training_start is not None else None,
                     "end": training_end.isoformat() if training_end is not None else None,
