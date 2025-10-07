@@ -1,6 +1,3 @@
-from pathlib import Path
-
-
 def _round_numbers(data):
     if isinstance(data, float):
         return round(data, 6)
@@ -20,34 +17,33 @@ def _scalar(value):
 def _yaml_lines(data, indent=0):
     prefix = "  " * indent
     if isinstance(data, dict):
-        lines = []
-        for key, value in data.items():
-            if isinstance(value, (dict, list)):
-                lines.append(f"{prefix}{key}:")
-                lines.extend(_yaml_lines(value, indent + 1))
-            else:
-                lines.append(f"{prefix}{key}: {_scalar(value)}")
-        return lines
+        return [
+            line
+            for key, value in data.items()
+            for line in (
+                [f"{prefix}{key}:"] + _yaml_lines(value, indent + 1)
+                if isinstance(value, (dict, list))
+                else [f"{prefix}{key}: {_scalar(value)}"]
+            )
+        ]
     if isinstance(data, list):
-        lines = []
-        for value in data:
-            if isinstance(value, (dict, list)):
-                lines.append(f"{prefix}-")
-                lines.extend(_yaml_lines(value, indent + 1))
-            else:
-                lines.append(f"{prefix}- {_scalar(value)}")
-        return lines
+        return [
+            line
+            for value in data
+            for line in (
+                [f"{prefix}-"] + _yaml_lines(value, indent + 1)
+                if isinstance(value, (dict, list))
+                else [f"{prefix}- {_scalar(value)}"]
+            )
+        ]
     return [f"{prefix}{_scalar(data)}"]
 
 
 def write_reports(results, directory):
     directory.mkdir(parents=True, exist_ok=True)
-    summary = {}
-    for year, payload in results.items():
-        rounded = _round_numbers(payload)
-        lines = _yaml_lines(rounded)
-        (directory / f"{year}.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
-        summary[str(year)] = rounded["portfolio"]["risk_metrics"]
-    if summary:
-        lines = _yaml_lines({"years": summary})
-        (directory / "summary.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    rounded = {year: _round_numbers(payload) for year, payload in results.items()}
+    for year, payload in rounded.items():
+        (directory / f"{year}.yaml").write_text("\n".join(_yaml_lines(payload)) + "\n", encoding="utf-8")
+    if rounded:
+        summary = {str(year): payload["portfolio"]["risk_metrics"] for year, payload in rounded.items()}
+        (directory / "summary.yaml").write_text("\n".join(_yaml_lines({"years": summary})) + "\n", encoding="utf-8")
