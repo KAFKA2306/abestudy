@@ -2,3 +2,4 @@
 data/raw/*.T.yaml
 __pycache__/
 *.pyc
+*.lock

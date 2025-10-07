@@ -1,0 +1,11 @@
+[project]
+name = "abestudy"
+version = "0.1.0"
+dependencies = [
+    "scipy",
+    "yfinance",
+    "pandas",
+    "numpy",
+    "PyYAML",
+    "matplotlib",
+]
