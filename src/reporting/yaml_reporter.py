@@ -48,7 +48,25 @@ def write_reports(results, directory):
     for year, payload in rounded.items():
         (directory / f"{year}.yaml").write_text("\n".join(_yaml_lines(payload)) + "\n", encoding="utf-8")
     if rounded:
-        summary = {str(year): payload["portfolio"]["risk_metrics"] for year, payload in rounded.items()}
+        summary = {
+            str(year): payload["portfolio"]["risk_metrics"]
+            for year, payload in rounded.items()
+        }
+        holdings = {
+            str(year): [
+                {
+                    "ticker": ticker,
+                    "name": weight_data.get("name", ""),
+                    "weight": float(weight_data.get("weight", 0.0)),
+                }
+                for ticker, weight_data in sorted(
+                    payload["portfolio"]["weights"].items(),
+                    key=lambda item: item[1].get("weight", 0.0),
+                    reverse=True,
+                )[:10]
+            ]
+            for year, payload in rounded.items()
+        }
         (directory / "summary.yaml").write_text("\n".join(_yaml_lines({"years": summary})) + "\n", encoding="utf-8")
-        report = render_summary_report(summary)
+        report = render_summary_report(summary, holdings)
         (directory / "summary_report.md").write_text(report, encoding="utf-8")
