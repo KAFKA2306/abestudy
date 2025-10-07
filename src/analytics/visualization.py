@@ -125,6 +125,10 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         series_map = {ticker: series for ticker, series in series_map.items() if not series.empty}
         start = max([info["start"], *(series.index.min() for series in series_map.values())])
         frame = pd.DataFrame(series_map).loc[lambda df: df.index >= start].ffill()
+        if frame.empty:
+            _no_data(ax, i, year, f"No data for {year} in range")
+            continue
+
         weights = (weights.loc[frame.columns] / weights.loc[frame.columns].sum()).astype(float)
         scaled = frame.divide(frame.iloc[0])
         portfolio_curve = scaled.mul(weights, axis=1).sum(axis=1)
