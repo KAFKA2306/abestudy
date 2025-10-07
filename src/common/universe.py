@@ -8,7 +8,13 @@ TICKERS = [
     "8035.T",
     "7735.T",
     "4503.T",
-    "9432.T"
+    "9432.T",
+    "7974.T",
+    "6861.T",
+    "9983.T",
+    "8058.T",
+    "8591.T",
+    "8267.T",
 ]
 CLASSIFICATION = {
     "7203.T": "automobile",
@@ -20,5 +26,11 @@ CLASSIFICATION = {
     "8035.T": "semiconductor",
     "7735.T": "optics",
     "4503.T": "pharmaceutical",
-    "9432.T": "telecom"
+    "9432.T": "telecom",
+    "7974.T": "entertainment",
+    "6861.T": "automation",
+    "9983.T": "retail",
+    "8058.T": "trading",
+    "8591.T": "leasing",
+    "8267.T": "consumer_retail",
 }
