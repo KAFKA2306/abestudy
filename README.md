@@ -6,3 +6,6 @@
 uv run python -m src.run_pipeline
 uv run python -m src.run_visualization
 ```
+## 結果の例
+
+reports/figures/yearly_portfolio_longrun.svg
