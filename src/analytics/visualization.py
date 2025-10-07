@@ -10,11 +10,17 @@ import pandas as pd
 import yaml
 import yfinance as yf
 
-from ..common.config import DATA_RAW, REPORT_DIR
+from ..common.config import DATA_RAW, REPORT_DIR, TICKER_NAMES_FILE
 from ..data_io.yaml_store import load_frames
 
 
-def _load_portfolios():
+def _load_ticker_names():
+    if not TICKER_NAMES_FILE.exists():
+        return {}
+    return yaml.safe_load(TICKER_NAMES_FILE.read_text(encoding="utf-8"))
+
+
+def _load_portfolios(ticker_names):
     portfolios = {}
     for path in sorted(REPORT_DIR.glob("*.yaml")):
         payload = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -30,7 +36,7 @@ def _load_portfolios():
             {
                 "ticker": item["ticker"],
                 "weight": float(item.get("weight", 0.0)),
-                "name": item.get("name", item["ticker"]),
+                "name": ticker_names.get(item["ticker"], item.get("name", item["ticker"])),
             }
             for item in ordered
         ]
@@ -105,7 +111,8 @@ def _load_closes(tickers, start=None, end=None, allow_downloads=None):
 
 
 def create_yearly_portfolio_panels(output_path: Path) -> Path:
-    portfolios = _load_portfolios()
+    ticker_names = _load_ticker_names()
+    portfolios = _load_portfolios(ticker_names)
     if not portfolios:
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.text(
@@ -131,13 +138,13 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
     global_end = max(info["end"] for info in portfolios.values())
     closes = _load_closes(tickers, global_start, global_end) if tickers else pd.DataFrame()
 
-    cols = 2
-    rows = max(1, math.ceil(len(full_year_range) / cols))
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 6.5, rows * 4.5))
+    cols = 1
+    rows = len(full_year_range)
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 12, rows * 5))
     axes = [axes] if isinstance(axes, Axes) else list(axes.ravel())
 
-    cmap = plt.get_cmap("tab20")
-    colors = {ticker: cmap(i % cmap.N) for i, ticker in enumerate(tickers)}
+    cmap = plt.get_cmap("viridis")
+    colors = {ticker: cmap(i / len(tickers)) for i, ticker in enumerate(tickers)}
 
     for ax, year in zip(axes, full_year_range):
         ax.set_facecolor("#f9f9f9")
@@ -148,12 +155,12 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
                 f"No data for {year}",
                 ha="center",
                 va="center",
-                fontsize=11,
+                fontsize=12,
                 color="dimgray",
             )
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_title(str(year))
+            ax.set_title(str(year), fontsize=14, fontweight="bold")
             continue
 
         info = portfolios[year]
@@ -167,12 +174,12 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
                 "No local price data",
                 ha="center",
                 va="center",
-                fontsize=11,
+                fontsize=12,
                 color="dimgray",
             )
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_title(str(year))
+            ax.set_title(str(year), fontsize=14, fontweight="bold")
             continue
 
         weights = weights.loc[available_tickers]
@@ -195,12 +202,12 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
                 "Insufficient price history",
                 ha="center",
                 va="center",
-                fontsize=11,
+                fontsize=12,
                 color="dimgray",
             )
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_title(str(year))
+            ax.set_title(str(year), fontsize=14, fontweight="bold")
             continue
 
         subset = subset.loc[:, valid_columns]
@@ -215,12 +222,12 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
                 "No prices after start date",
                 ha="center",
                 va="center",
-                fontsize=11,
+                fontsize=12,
                 color="dimgray",
             )
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_title(str(year))
+            ax.set_title(str(year), fontsize=14, fontweight="bold")
             continue
 
         base = subset.iloc[0]
@@ -229,39 +236,42 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         portfolio_curve = scaled.mul(weights, axis=1).sum(axis=1)
 
         for ticker in scaled.columns:
+            name = ticker_names.get(ticker, ticker)
             ax.plot(
                 scaled.index,
                 scaled[ticker],
-                linewidth=1.0,
-                alpha=0.85,
+                linewidth=1.5,
+                alpha=0.8,
                 color=colors.get(ticker, "#555555"),
-                label=f"{ticker} ({weights[ticker]:.1%})",
+                label=f"{name} ({weights[ticker]:.1%})",
             )
 
         ax.plot(
             portfolio_curve.index,
             portfolio_curve,
-            linewidth=2.0,
+            linewidth=2.5,
             color="black",
             label="Portfolio",
         )
 
-        ax.set_title(str(year))
-        ax.set_ylabel("Indexed performance (base = 100)")
-        ax.set_xlabel("Date")
-        ax.grid(alpha=0.3, linestyle="--", linewidth=0.6)
-        ax.xaxis.set_major_locator(mdates.YearLocator())
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-        ax.tick_params(axis="x", rotation=0, labelsize=8)
-        ax.tick_params(axis="y", labelsize=8)
-        ax.legend(fontsize=8, ncol=2, frameon=False, loc="upper left")
+        ax.set_title(str(year), fontsize=14, fontweight="bold")
+        ax.set_ylabel("Indexed performance (base = 100)", fontsize=10)
+        ax.set_xlabel("Date", fontsize=10)
+        ax.grid(alpha=0.5, linestyle="--", linewidth=0.8)
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+        ax.tick_params(axis="x", rotation=30, labelsize=9)
+        ax.tick_params(axis="y", labelsize=9)
+        ax.legend(fontsize=9, ncol=2, frameon=True, loc="upper left", facecolor="white", framealpha=0.8)
+        ax.set_xlim(global_start, global_end)
+
 
     for ax in axes[len(full_year_range):]:
         fig.delaxes(ax)
 
-    fig.suptitle("Portfolio performance by year", fontsize=14, fontweight="bold")
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    fig.suptitle("Portfolio Performance by Year", fontsize=18, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, format=output_path.suffix.lstrip("."))
+    fig.savefig(output_path, format=output_path.suffix.lstrip("."), dpi=150)
     plt.close(fig)
     return output_path
