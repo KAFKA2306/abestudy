@@ -4,7 +4,14 @@ from zoneinfo import ZoneInfo
 
 
 def fetch_series(ticker, start, end, timezone):
-    data = yf.download(ticker, start=start, end=end, interval="1d", auto_adjust=False, progress=False)[["Close", "Volume"]]
+    data = yf.download(
+        ticker,
+        start=start,
+        end=end,
+        interval="1d",
+        auto_adjust=False,
+        progress=False,
+    )[["Adj Close", "Volume"]]
     data.columns = ["close", "volume"]
     index = pd.DatetimeIndex(data.index).tz_localize("UTC").tz_convert(ZoneInfo(timezone))
     data.index = index
