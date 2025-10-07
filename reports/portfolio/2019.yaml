@@ -1,0 +1,62 @@
+period:
+  start: 2019-01-01
+  end: 2019-12-31
+universe:
+  -
+    ticker: 7203.T
+    asset_class: automobile
+  -
+    ticker: 6758.T
+    asset_class: electronics
+  -
+    ticker: 9984.T
+    asset_class: investment
+  -
+    ticker: 8306.T
+    asset_class: finance
+  -
+    ticker: 6954.T
+    asset_class: industrial
+  -
+    ticker: 4063.T
+    asset_class: materials
+  -
+    ticker: 8035.T
+    asset_class: semiconductor
+  -
+    ticker: 7735.T
+    asset_class: optics
+  -
+    ticker: 4503.T
+    asset_class: pharmaceutical
+  -
+    ticker: 9432.T
+    asset_class: telecom
+portfolio:
+  weights:
+    7203.T: 0.074157
+    6758.T: 0.131185
+    9984.T: 0.041543
+    8306.T: 0.000000
+    6954.T: 0.000000
+    4063.T: 0.161789
+    8035.T: 0.200000
+    7735.T: 0.000000
+    4503.T: 0.191326
+    9432.T: 0.200000
+  risk_metrics:
+    annual_return: 0.399131
+    volatility: 0.153784
+    sharpe_ratio: 2.595390
+    max_drawdown: -0.082407
+  classification:
+    automobile: 0.074157
+    electronics: 0.131185
+    investment: 0.041543
+    finance: 0.000000
+    industrial: 0.000000
+    materials: 0.161789
+    semiconductor: 0.200000
+    optics: 0.000000
+    pharmaceutical: 0.191326
+    telecom: 0.200000
