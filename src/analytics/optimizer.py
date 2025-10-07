@@ -24,6 +24,9 @@ def _weight_sharpe(returns: pd.DataFrame, max_weight: float) -> pd.Series:
     cleaned = _clean_training_returns(returns)
     tickers = list(returns.columns)
 
+    if cleaned.empty:
+        return pd.Series(0.0, index=tickers)
+
     means = cleaned.mean().values
     cov = cleaned.cov().values
     count = len(means)
