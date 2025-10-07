@@ -19,6 +19,8 @@ def _load_ticker_names():
 def _load_portfolios(ticker_names):
     portfolios = {}
     for path in sorted(REPORT_DIR.glob("*.yaml")):
+        if path.name == "summary.yaml":
+            continue
         payload = yaml.safe_load(path.read_text(encoding="utf-8"))
         year = int(payload["year"])
         allocation = payload["portfolio"]["allocations"]
@@ -35,8 +37,8 @@ def _load_portfolios(ticker_names):
         evaluation_window = payload["conditions"]["evaluation_window"]
         start = evaluation_window["start"]
         end = evaluation_window["end"]
-        start_ts = pd.Timestamp(start).tz_localize(None)
-        end_ts = pd.Timestamp(end).tz_localize(None)
+        start_ts = pd.Timestamp(start)
+        end_ts = pd.Timestamp(end)
         portfolios[year] = {"holdings": parsed_holdings, "start": start_ts, "end": end_ts}
     return portfolios
 
