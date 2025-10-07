@@ -11,7 +11,7 @@ import yaml
 import yfinance as yf
 import numpy as np
 
-from ..common.config import DATA_RAW, REPORT_DIR, TICKER_NAMES_FILE, ABENOMICS_START, ABENOMICS_END
+from ..common.config import DATA_RAW, REPORT_DIR, TICKER_NAMES_FILE, ABENOMICS_START, ABENOMICS_END, TIMELINE_START
 from ..data_io.yaml_store import load_frames
 
 
@@ -123,7 +123,7 @@ def _plot_no_data_message(ax, year, message, global_start, global_end):
     ax.set_yticks([])
     ax.set_title(str(year), fontsize=14, fontweight="bold")
     ax.set_xlim(global_start, global_end)
-    ax.set_ylim(10, 1000)
+    ax.set_ylim(0.1, 10) # Changed ylim
     ax.set_yscale('log')
 
 def create_yearly_portfolio_panels(output_path: Path) -> Path:
@@ -142,13 +142,13 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
     years_with_data = sorted(portfolios)
     full_year_range = list(range(min(years_with_data), max(years_with_data) + 1))
     tickers = sorted({holding["ticker"] for info in portfolios.values() for holding in info["holdings"]})
-    global_start = min(info["start"] for info in portfolios.values())
+    global_start = pd.Timestamp(TIMELINE_START).tz_localize(None) # Changed global_start
     global_end = pd.Timestamp.now().normalize() # Extend to today
     closes = _load_closes(tickers, global_start, global_end) if tickers else pd.DataFrame()
 
     cols = 1
     rows = len(full_year_range)
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 12, rows * 5))
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 24, rows * 5)) # Doubled width
     axes = [axes] if isinstance(axes, Axes) else list(axes.ravel())
 
     cmap = plt.get_cmap("tab20") # Changed colormap to tab20
@@ -161,7 +161,7 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
     for i, (ax, year) in enumerate(zip(axes, full_year_range)):
         ax.set_facecolor("#f9f9f9")
         ax.set_xlim(global_start, global_end)
-        ax.set_ylim(10, 1000)
+        ax.set_ylim(0.1, 10) # Changed ylim
         ax.set_yscale('log')
 
         if year not in portfolios:
@@ -220,7 +220,7 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
 
         base = subset.iloc[0]
         normalized = subset.divide(base)
-        scaled = normalized * 100
+        scaled = normalized * 1 # Changed base from 100 to 1
         portfolio_curve = scaled.mul(weights, axis=1).sum(axis=1)
 
         # Plot Abenomics period
@@ -283,10 +283,10 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
             sorted_labels.append(abenomics_label)
 
         ax.set_title(str(year), fontsize=14, fontweight="bold")
-        ax.set_ylabel("Indexed performance (base = 100)", fontsize=10)
+        ax.set_ylabel("Indexed performance (base = 1)", fontsize=10) # Changed base from 100 to 1
         ax.grid(True, which="both", ls="-", alpha=0.5) # Ensure both major and minor grid lines
-        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+        ax.xaxis.set_major_locator(mdates.YearLocator()) # Changed to YearLocator
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y")) # Changed to display year only
         ax.tick_params(axis="x", rotation=30, labelsize=9)
         ax.tick_params(axis="y", labelsize=9)
         ax.legend(sorted_lines, sorted_labels, fontsize=10, ncol=1, frameon=True, loc='center left', bbox_to_anchor=(1, 0.5), facecolor="white", framealpha=1.0)
@@ -303,7 +303,7 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         fig.delaxes(ax)
 
     fig.suptitle("Portfolio Performance by Year", fontsize=18, fontweight="bold")
-    fig.tight_layout(rect=(0, 0, 0.85, 0.96))
+    fig.tight_layout(rect=(0, 0, 0.92, 0.96)) # Adjusted rect for wider graph
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, format=output_path.suffix.lstrip("."), dpi=150)
     plt.close(fig)
