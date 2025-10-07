@@ -1,6 +1,5 @@
 from pathlib import Path
 import os
-import warnings
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -14,9 +13,8 @@ from ..data_io.yaml_store import load_frames
 
 
 def _load_ticker_names():
-    if not TICKER_NAMES_FILE.exists():
-        return {}
-    return yaml.safe_load(TICKER_NAMES_FILE.read_text(encoding="utf-8"))
+    data = yaml.safe_load(TICKER_NAMES_FILE.read_text(encoding="utf-8"))
+    return data or {}
 
 
 def _load_portfolios(ticker_names):
@@ -78,28 +76,19 @@ def _load_closes(tickers, start=None, end=None, allow_downloads=None):
         download_start = (start - pd.Timedelta(days=7)).strftime("%Y-%m-%d")
         download_end = (end + pd.Timedelta(days=7)).strftime("%Y-%m-%d")
         for ticker in missing:
-            try:
-                history = yf.download(
-                    ticker,
-                    start=download_start,
-                    end=download_end,
-                    progress=False,
-                    auto_adjust=True,
-                )
-            except Exception:
-                continue
+            history = yf.download(
+                ticker,
+                start=download_start,
+                end=download_end,
+                progress=False,
+                auto_adjust=True,
+            )
             if history.empty or "Close" not in history:
                 continue
             close_series = history["Close"].copy()
             if getattr(close_series.index, "tz", None) is not None:
                 close_series.index = close_series.index.tz_localize(None)
             series_map[ticker] = close_series.sort_index()
-    elif missing:
-        warnings.warn(
-            "Skipping download for tickers without local data: " + ", ".join(sorted(missing)),
-            RuntimeWarning,
-            stacklevel=2,
-        )
 
     closes = pd.DataFrame(series_map)
     closes = closes.sort_index()

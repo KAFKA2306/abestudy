@@ -29,9 +29,6 @@ def render_summary_report(
     top_holdings: Optional[Mapping[str, Sequence[Mapping[str, float]]]] = None,
 ) -> str:
     rows = _prepare_rows(summary)
-    if not rows:
-        return "# ポートフォリオ年次パフォーマンス概要\n\nデータがありません。\n"
-
     best_return = max(rows, key=lambda row: row["annual_return"])
     worst_return = min(rows, key=lambda row: row["annual_return"])
     lowest_volatility = min(rows, key=lambda row: row["volatility"])
@@ -119,11 +116,7 @@ def render_summary_report(
                 ticker = holding.get("ticker", "")
                 name = holding.get("name") or ticker
                 weight = float(holding.get("weight", float("nan")))
-                rank = holding.get("rank", default_rank)
-                try:
-                    rank = int(rank)
-                except (TypeError, ValueError):
-                    rank = default_rank
+                rank = int(holding.get("rank", default_rank))
                 lines.append(
                     f"- {rank}. {name}（{ticker}）: {_percent(weight)}"
                 )
