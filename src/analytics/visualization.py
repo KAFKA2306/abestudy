@@ -108,15 +108,15 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
 
     for i, (ax, year) in enumerate(zip(axes, full_year_range)):
         ax.set_facecolor("#f9f9f9")
-        if year in portfolios:
-            info = portfolios[year]
-            ax.set_xlim(info["start"], info["end"])
-        else:
+        ax.set_xlim(global_start, global_end)
+        ax.set_ylim(0.1, 10)
+        ax.set_yscale("log")
+
+        if year not in portfolios:
             _no_data(ax, i, year, f"No data for {year}")
             continue
 
-        ax.set_ylim(0.1, 10)
-        ax.set_yscale("log")
+        info = portfolios[year]
         weights = pd.Series({holding["ticker"]: holding["weight"] for holding in info["holdings"]}, dtype=float)
         available_tickers = [ticker for ticker in weights.index if ticker in closes.columns]
         weights = weights.loc[available_tickers]
