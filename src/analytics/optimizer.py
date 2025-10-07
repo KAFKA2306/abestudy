@@ -5,110 +5,62 @@ from scipy.optimize import minimize
 from ..common.config import TRADING_DAYS
 
 
-def _annualize_return(daily_mean: float) -> float:
-    return float(daily_mean * TRADING_DAYS)
-
-
-def _annualize_volatility(daily_vol: float) -> float:
-    return float(daily_vol * np.sqrt(TRADING_DAYS))
-
-
-def _clean_training_returns(returns: pd.DataFrame) -> pd.DataFrame:
-    """Remove missing values while preserving available tickers.
-
-    Rows containing any missing values are dropped because the optimizer
-    requires aligned observations to compute the covariance matrix. Columns
-    without any observed data are dropped to avoid propagating NaNs.
-    """
-
+def _clean(returns: pd.DataFrame) -> pd.DataFrame:
     if returns.empty:
         return returns
-
-    cleaned = returns.dropna(axis=1, how="all")
-    cleaned = cleaned.dropna(how="any")
-    return cleaned
+    return returns.dropna(axis=1, how="all").dropna(how="any")
 
 
-def _weight_sharpe(returns: pd.DataFrame, max_weight: float) -> pd.Series:
-    cleaned = _clean_training_returns(returns)
+def _sharpe_weights(returns: pd.DataFrame, max_weight: float) -> pd.Series:
     tickers = list(returns.columns)
-
+    cleaned = _clean(returns)
     if cleaned.empty:
-        # Fall back to an equal weight allocation when there is insufficient
-        # history. The caller is expected to guard against this situation, but
-        # we still guard to keep the API robust.
-        equal = np.full(len(tickers), 1 / len(tickers))
-        return pd.Series(equal, index=tickers)
+        return pd.Series(np.full(len(tickers), 1 / len(tickers)), index=tickers)
 
     means = cleaned.mean().values
     cov = cleaned.cov().values
-    count = len(means)
+    n_assets = len(means)
+    bounds = [(0, max_weight)] * n_assets
+    constraints = {"type": "eq", "fun": lambda w: np.sum(w) - 1}
+    start = np.full(n_assets, 1 / n_assets)
 
-    def objective(weights):
-        port_return = np.dot(weights, means) * TRADING_DAYS
-        port_vol = np.sqrt(np.dot(weights, cov).dot(weights) * TRADING_DAYS)
-        return 0 if port_vol == 0 else -port_return / port_vol
+    def objective(weights: np.ndarray) -> float:
+        port_return = float(weights @ means) * TRADING_DAYS
+        port_vol = float(np.sqrt(weights @ cov @ weights) * np.sqrt(TRADING_DAYS))
+        return 0.0 if port_vol == 0 else -port_return / port_vol
 
-    bounds = [(0, max_weight)] * count
-    constraints = ({"type": "eq", "fun": lambda w: np.sum(w) - 1},)
-    initial = np.full(count, 1 / count)
-    result = minimize(objective, initial, bounds=bounds, constraints=constraints)
-
-    if not result.success or np.allclose(result.x.sum(), 0):
-        weights = initial
-    else:
-        weights = result.x
-
+    result = minimize(objective, start, bounds=bounds, constraints=constraints)
+    weights = result.x if result.success and not np.allclose(result.x.sum(), 0) else start
     weights = np.clip(weights, 0, max_weight)
     weights = weights / weights.sum()
 
-    # Reconstruct the full ticker universe, assigning zero weight to tickers
-    # that were dropped during cleaning.
-    series = pd.Series(0.0, index=tickers)
-    for ticker, weight in zip(cleaned.columns, weights):
-        series.loc[ticker] = weight
-    return series
+    allocation = pd.Series(0.0, index=tickers)
+    allocation.loc[cleaned.columns] = weights
+    return allocation
 
 
-def _metrics(returns: pd.DataFrame, weights: pd.Series):
-    available = returns.loc[:, weights.index].dropna()
-    if available.empty:
-        return {
-            "annual_return": 0.0,
-            "volatility": 0.0,
-            "sharpe_ratio": 0.0,
-            "max_drawdown": 0.0,
-        }
+def _metrics(returns: pd.DataFrame, weights: pd.Series) -> dict:
+    aligned = returns.loc[:, weights.index].dropna()
+    if aligned.empty:
+        return {"annual_return": 0.0, "volatility": 0.0, "sharpe_ratio": 0.0, "max_drawdown": 0.0}
 
-    daily = available.dot(weights.loc[available.columns])
-    annual_return = _annualize_return(float(daily.mean()))
-    volatility = _annualize_volatility(float(daily.std(ddof=0)))
+    portfolio = aligned @ weights.loc[aligned.columns]
+    annual_return = float(portfolio.mean() * TRADING_DAYS)
+    volatility = float(portfolio.std(ddof=0) * np.sqrt(TRADING_DAYS))
     sharpe_ratio = 0.0 if volatility == 0 else annual_return / volatility
-    curve = (1 + daily).cumprod()
-    drawdown = (curve / curve.cummax()) - 1
-    max_drawdown = float(drawdown.min())
+    curve = (1 + portfolio).cumprod()
+    drawdown = curve / curve.cummax() - 1
     return {
         "annual_return": annual_return,
         "volatility": volatility,
         "sharpe_ratio": sharpe_ratio,
-        "max_drawdown": max_drawdown,
+        "max_drawdown": float(drawdown.min()),
     }
 
 
-def _classification(weights, mapping):
-    grouped = {}
-    for ticker, weight in weights.items():
-        key = mapping.get(ticker, "unclassified")
-        grouped[key] = grouped.get(key, 0.0) + float(weight)
-    return grouped
-
-
-def _weight_entries(weights, names, tickers):
+def _entries(weights: pd.Series, names: dict, tickers: list[str]) -> dict:
     return {
-        ticker: {
-            "name": names.get(ticker, ""),
-            "weight": float(weights.get(ticker, 0.0)),
-        }
+        ticker: {"name": names.get(ticker, ""), "weight": float(weights.get(ticker, 0.0))}
         for ticker in tickers
     }
 
@@ -122,11 +74,11 @@ def build_yearly_portfolios(
     universe_resolver,
     fallback_names,
 ):
-    closes = pd.DataFrame({ticker: frame["close"] for ticker, frame in frames.items()})
-    closes = closes.sort_index()
+    closes = pd.DataFrame({ticker: frame["close"] for ticker, frame in frames.items()}).sort_index()
     returns = closes.pct_change(fill_method=None).dropna()
-    results = {}
     tz = returns.index.tz
+    results = {}
+
     for year in years:
         universe = universe_resolver(year)
         tickers = [ticker for ticker in universe if ticker in returns.columns]
@@ -135,51 +87,42 @@ def build_yearly_portfolios(
 
         start = pd.Timestamp(year=year, month=1, day=1, tz=tz)
         end = pd.Timestamp(year=year, month=12, day=31, tz=tz)
-
-        year_mask = (returns.index >= start) & (returns.index <= end)
-        year_returns = returns.loc[year_mask, tickers]
-        if year_returns.empty:
+        evaluation = returns.loc[(returns.index >= start) & (returns.index <= end), tickers]
+        if evaluation.empty:
             continue
 
         if lookback_days is None:
-            train_mask = (returns.index < start)
+            training = returns.loc[returns.index < start, tickers]
         else:
             train_start = start - pd.Timedelta(days=lookback_days)
-            train_mask = (returns.index >= train_start) & (returns.index < start)
+            training = returns.loc[(returns.index >= train_start) & (returns.index < start), tickers]
 
-        training_returns = returns.loc[train_mask, tickers]
-        cleaned_training = _clean_training_returns(training_returns)
+        cleaned_training = _clean(training)
         if cleaned_training.shape[0] < min_training_observations:
             continue
 
-        weights = _weight_sharpe(training_returns, max_weight)
-        metrics = _metrics(year_returns, weights)
-
-        training_start = cleaned_training.index.min()
-        training_end = cleaned_training.index.max()
-        evaluation_start = year_returns.index.min()
-        evaluation_end = year_returns.index.max()
+        weights = _sharpe_weights(training, max_weight)
+        metrics = _metrics(evaluation, weights)
+        names = {**fallback_names, **universe}
 
         results[year] = {
             "period": {"start": f"{year}-01-01", "end": f"{year}-12-31"},
             "universe": [
-                {
-                    "ticker": ticker,
-                    "name": universe.get(ticker, fallback_names.get(ticker, "")),
-                }
+                {"ticker": ticker, "name": names.get(ticker, "")}
                 for ticker in tickers
             ],
             "portfolio": {
-                "weights": _weight_entries(weights, {**fallback_names, **universe}, tickers),
+                "weights": _entries(weights, names, tickers),
                 "risk_metrics": metrics,
                 "training_window": {
-                    "start": training_start.isoformat() if training_start is not None else None,
-                    "end": training_end.isoformat() if training_end is not None else None,
+                    "start": cleaned_training.index.min().isoformat() if not cleaned_training.empty else None,
+                    "end": cleaned_training.index.max().isoformat() if not cleaned_training.empty else None,
                 },
                 "evaluation_window": {
-                    "start": evaluation_start.isoformat() if evaluation_start is not None else None,
-                    "end": evaluation_end.isoformat() if evaluation_end is not None else None,
+                    "start": evaluation.index.min().isoformat(),
+                    "end": evaluation.index.max().isoformat(),
                 },
             },
         }
+
     return results
