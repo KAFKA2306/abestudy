@@ -21,13 +21,9 @@ def _load_portfolios(ticker_names):
     portfolios = {}
     for path in sorted(REPORT_DIR.glob("*.yaml")):
         payload = yaml.safe_load(path.read_text(encoding="utf-8"))
-        if "year" not in payload:
-            continue
         year = int(payload["year"])
         allocation = payload.get("portfolio", {}).get("allocations", {})
         holdings = allocation.get("top_holdings", [])
-        if not holdings:
-            continue
         ordered = sorted(holdings, key=lambda item: float(item.get("weight", 0.0)), reverse=True)[:10]
         parsed_holdings = [
             {
@@ -37,13 +33,9 @@ def _load_portfolios(ticker_names):
             }
             for item in ordered
         ]
-        if not parsed_holdings:
-            continue
         evaluation_window = payload.get("conditions", {}).get("evaluation_window", {})
         start = evaluation_window.get("start")
         end = evaluation_window.get("end")
-        if start is None or end is None:
-            continue
         start_ts = pd.Timestamp(start).tz_localize(None)
         end_ts = pd.Timestamp(end).tz_localize(None)
         portfolios[year] = {"holdings": parsed_holdings, "start": start_ts, "end": end_ts}
@@ -51,49 +43,20 @@ def _load_portfolios(ticker_names):
 
 
 def _load_closes(tickers, start=None, end=None, allow_downloads=None):
-    if not tickers:
-        return pd.DataFrame()
-
     tickers = sorted(set(tickers))
     available_locally = [ticker for ticker in tickers if (DATA_RAW / f"{ticker}.yaml").exists()]
     series_map = {}
 
-    if available_locally:
-        frames = load_frames(available_locally, DATA_RAW)
-        for ticker, frame in frames.items():
-            if "close" in frame:
-                close_series = frame["close"].copy()
-                close_series.index = pd.to_datetime(close_series.index)
-                if getattr(close_series.index, "tz", None) is not None:
-                    close_series.index = close_series.index.tz_localize(None)
-                series_map[ticker] = close_series.sort_index()
-
-    missing = [ticker for ticker in tickers if ticker not in series_map]
-    if allow_downloads is None:
-        allow_downloads = os.getenv("ABESTUDY_ALLOW_REMOTE_DATA", "").lower() in {"1", "true", "yes"}
-
-    if missing and allow_downloads and start is not None and end is not None:
-        download_start = (start - pd.Timedelta(days=7)).strftime("%Y-%m-%d")
-        download_end = (end + pd.Timedelta(days=7)).strftime("%Y-%m-%d")
-        for ticker in missing:
-            history = yf.download(
-                ticker,
-                start=download_start,
-                end=download_end,
-                progress=False,
-                auto_adjust=True,
-            )
-            if history.empty or "Close" not in history:
-                continue
-            close_series = history["Close"].copy()
-            if getattr(close_series.index, "tz", None) is not None:
-                close_series.index = close_series.index.tz_localize(None)
+    frames = load_frames(available_locally, DATA_RAW)
+    for ticker, frame in frames.items():
+        if "close" in frame:
+            close_series = frame["close"].copy()
+            close_series.index = pd.to_datetime(close_series.index)
             series_map[ticker] = close_series.sort_index()
 
+    missing = [ticker for ticker in tickers if ticker not in series_map]
     closes = pd.DataFrame(series_map)
     closes = closes.sort_index()
-    if getattr(closes.index, "tz", None) is not None:
-        closes.index = closes.index.tz_localize(None)
     return closes
 
 def _plot_no_data_message(ax, year, message, global_start, global_end):
@@ -116,16 +79,6 @@ def _plot_no_data_message(ax, year, message, global_start, global_end):
 def create_yearly_portfolio_panels(output_path: Path) -> Path:
     ticker_names = _load_ticker_names()
     portfolios = _load_portfolios(ticker_names)
-    if not portfolios:
-        fig, ax = plt.subplots(figsize=(6, 4))
-        _plot_no_data_message(ax, "", "No portfolio data available", None, None)
-        ax.axis("off")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        fig.tight_layout()
-        fig.savefig(output_path, format=output_path.suffix.lstrip("."))
-        plt.close(fig)
-        return output_path
-
     years_with_data = sorted(portfolios)
     full_year_range = list(range(min(years_with_data), max(years_with_data) + 1))
     tickers = sorted({holding["ticker"] for info in portfolios.values() for holding in info["holdings"]})
@@ -158,35 +111,15 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         ax.set_xlim(global_start, global_end)
         ax.set_ylim(0.1, 10)
         ax.set_yscale("log")
-
-        if year not in portfolios:
-            _no_data(ax, i, year, f"No data for {year}")
-            continue
-
         info = portfolios[year]
         weights = pd.Series({holding["ticker"]: holding["weight"] for holding in info["holdings"]}, dtype=float)
         available_tickers = [ticker for ticker in weights.index if not closes.empty and ticker in closes.columns]
-
-        if not available_tickers:
-            _no_data(ax, i, year, "No local price data")
-            continue
-
         weights = weights.loc[available_tickers]
         subset = closes[available_tickers]
         series_map = {ticker: series.dropna() for ticker, series in subset.items()}
         series_map = {ticker: series for ticker, series in series_map.items() if not series.empty}
-
-        if not series_map:
-            _no_data(ax, i, year, "Insufficient price history")
-            continue
-
         start = max([info["start"], *(series.index.min() for series in series_map.values())])
         frame = pd.DataFrame(series_map).loc[lambda df: df.index >= start].ffill()
-
-        if frame.empty:
-            _no_data(ax, i, year, "No prices after start date")
-            continue
-
         weights = (weights.loc[frame.columns] / weights.loc[frame.columns].sum()).astype(float)
         scaled = frame.divide(frame.iloc[0])
         portfolio_curve = scaled.mul(weights, axis=1).sum(axis=1)
