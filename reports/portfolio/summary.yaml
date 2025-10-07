@@ -1,41 +1,41 @@
 years:
   2013:
-    annual_return: nan
-    volatility: nan
-    sharpe_ratio: nan
-    max_drawdown: nan
+    annual_return: 0.569277
+    volatility: 0.247648
+    sharpe_ratio: 2.298731
+    max_drawdown: -0.174918
   2014:
-    annual_return: nan
-    volatility: nan
-    sharpe_ratio: nan
-    max_drawdown: nan
+    annual_return: 0.416052
+    volatility: 0.262423
+    sharpe_ratio: 1.585426
+    max_drawdown: -0.153221
   2015:
-    annual_return: nan
-    volatility: nan
-    sharpe_ratio: nan
-    max_drawdown: nan
+    annual_return: 0.228915
+    volatility: 0.255947
+    sharpe_ratio: 0.894384
+    max_drawdown: -0.217835
   2016:
-    annual_return: nan
-    volatility: nan
-    sharpe_ratio: nan
-    max_drawdown: nan
+    annual_return: -0.049642
+    volatility: 0.262326
+    sharpe_ratio: -0.189237
+    max_drawdown: -0.212193
   2017:
-    annual_return: nan
-    volatility: nan
-    sharpe_ratio: nan
-    max_drawdown: nan
+    annual_return: 0.163218
+    volatility: 0.158650
+    sharpe_ratio: 1.028793
+    max_drawdown: -0.117513
   2018:
-    annual_return: nan
-    volatility: nan
-    sharpe_ratio: nan
-    max_drawdown: nan
+    annual_return: -0.190319
+    volatility: 0.205709
+    sharpe_ratio: -0.925184
+    max_drawdown: -0.297521
   2019:
-    annual_return: nan
-    volatility: nan
-    sharpe_ratio: nan
-    max_drawdown: nan
+    annual_return: 0.123713
+    volatility: 0.165566
+    sharpe_ratio: 0.747210
+    max_drawdown: -0.079597
   2020:
-    annual_return: nan
-    volatility: nan
-    sharpe_ratio: nan
-    max_drawdown: nan
+    annual_return: 0.258528
+    volatility: 0.240779
+    sharpe_ratio: 1.073713
+    max_drawdown: -0.257515
