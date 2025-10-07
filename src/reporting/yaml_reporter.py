@@ -1,3 +1,6 @@
+from .markdown_reporter import render_summary_report
+
+
 def _round_numbers(data):
     if isinstance(data, float):
         return round(data, 6)
@@ -47,3 +50,5 @@ def write_reports(results, directory):
     if rounded:
         summary = {str(year): payload["portfolio"]["risk_metrics"] for year, payload in rounded.items()}
         (directory / "summary.yaml").write_text("\n".join(_yaml_lines({"years": summary})) + "\n", encoding="utf-8")
+        report = render_summary_report(summary)
+        (directory / "summary_report.md").write_text(report, encoding="utf-8")
