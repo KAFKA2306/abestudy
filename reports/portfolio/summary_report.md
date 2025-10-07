@@ -30,3 +30,16 @@
 - リスク許容度を確認し、2018年の下落幅-29.8%を想定したドローダウン管理を整備しましょう。
 - 安定性が際立った2017年の運用要因を分析し、再現可能性を検証します。
 - マイナスリターンとなった2018年の市場環境とポジションを振り返り、防衛的な戦略に反映させます。
+
+## 2020年ポートフォリオ上位10銘柄
+
+- 1. CHUGAI PHARMACEUTICAL CO., LTD.（4519.T）: 20.0%
+- 2. CASIO COMPUTER CO., LTD.（6952.T）: 20.0%
+- 3. NTT, INC.（9432.T）: 15.8%
+- 4. FUJITSU LTD.（6702.T）: 9.7%
+- 5. ADVANTEST CORP.（6857.T）: 8.0%
+- 6. DAIICHI SANKYO CO., LTD.（4568.T）: 6.8%
+- 7. SONY GROUP CORP.（6758.T）: 6.3%
+- 8. BANDAI NAMCO HOLDINGS INC.（7832.T）: 5.8%
+- 9. ASTELLAS PHARMA INC.（4503.T）: 4.0%
+- 10. NINTENDO CO., LTD.（7974.T）: 1.9%

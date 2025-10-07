@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from statistics import mean
-from typing import Dict, Iterable, List, Mapping
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence
 
 
 def _percent(value: float, digits: int = 1) -> str:
@@ -24,7 +24,10 @@ def _prepare_rows(summary: Mapping[str, Mapping[str, float]]) -> List[Dict[str, 
     ]
 
 
-def render_summary_report(summary: Mapping[str, Mapping[str, float]]) -> str:
+def render_summary_report(
+    summary: Mapping[str, Mapping[str, float]],
+    top_holdings: Optional[Mapping[str, Sequence[Mapping[str, float]]]] = None,
+) -> str:
     rows = _prepare_rows(summary)
     if not rows:
         return "# ポートフォリオ年次パフォーマンス概要\n\nデータがありません。\n"
@@ -55,6 +58,10 @@ def render_summary_report(summary: Mapping[str, Mapping[str, float]]) -> str:
 
     start_year = rows[0]["year"]
     end_year = rows[-1]["year"]
+
+    holdings_by_year = top_holdings or {}
+    latest_year_key = str(latest_year["year"])
+    latest_holdings = list(holdings_by_year.get(latest_year_key, []))
 
     lines: List[str] = [
         f"# ポートフォリオ年次パフォーマンス概要（{start_year}-{end_year}）",
@@ -99,5 +106,19 @@ def render_summary_report(summary: Mapping[str, Mapping[str, float]]) -> str:
             "",
         ]
     )
+
+    lines.extend([f"## {latest_year['year']}年ポートフォリオ上位10銘柄", ""])
+    if latest_holdings:
+        for rank, holding in enumerate(latest_holdings[:10], start=1):
+            ticker = holding.get("ticker", "")
+            name = holding.get("name") or ticker
+            weight = float(holding.get("weight", float("nan")))
+            lines.append(
+                f"- {rank}. {name}（{ticker}）: {_percent(weight)}"
+            )
+    else:
+        lines.append("- データが不足しています。")
+
+    lines.append("")
 
     return "\n".join(lines)
