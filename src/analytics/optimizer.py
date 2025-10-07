@@ -117,32 +117,37 @@ def build_yearly_portfolios(
     frames,
     years,
     max_weight,
-    names,
     lookback_days,
     min_training_observations,
+    universe_resolver,
+    fallback_names,
 ):
     closes = pd.DataFrame({ticker: frame["close"] for ticker, frame in frames.items()})
     closes = closes.sort_index()
     returns = closes.pct_change().dropna()
-    tickers = list(frames.keys())
     results = {}
     tz = returns.index.tz
     for year in years:
+        universe = universe_resolver(year)
+        tickers = [ticker for ticker in universe if ticker in returns.columns]
+        if not tickers:
+            continue
+
         start = pd.Timestamp(year=year, month=1, day=1, tz=tz)
         end = pd.Timestamp(year=year, month=12, day=31, tz=tz)
 
         year_mask = (returns.index >= start) & (returns.index <= end)
-        year_returns = returns.loc[year_mask]
+        year_returns = returns.loc[year_mask, tickers]
         if year_returns.empty:
             continue
 
         if lookback_days is None:
-            train_mask = returns.index < start
+            train_mask = (returns.index < start)
         else:
             train_start = start - pd.Timedelta(days=lookback_days)
             train_mask = (returns.index >= train_start) & (returns.index < start)
 
-        training_returns = returns.loc[train_mask]
+        training_returns = returns.loc[train_mask, tickers]
         cleaned_training = _clean_training_returns(training_returns)
         if cleaned_training.shape[0] < min_training_observations:
             continue
@@ -160,12 +165,12 @@ def build_yearly_portfolios(
             "universe": [
                 {
                     "ticker": ticker,
-                    "name": names.get(ticker, ""),
+                    "name": universe.get(ticker, fallback_names.get(ticker, "")),
                 }
                 for ticker in tickers
             ],
             "portfolio": {
-                "weights": _weight_entries(weights, names, tickers),
+                "weights": _weight_entries(weights, {**fallback_names, **universe}, tickers),
                 "risk_metrics": metrics,
                 "training_window": {
                     "start": training_start.isoformat() if training_start is not None else None,
