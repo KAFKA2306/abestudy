@@ -14,8 +14,6 @@ def _annualize_volatility(daily_vol: float) -> float:
 
 
 def _clean_training_returns(returns: pd.DataFrame) -> pd.DataFrame:
-    if returns.empty:
-        return returns
 
     cleaned = returns.dropna(axis=1, how="all")
     cleaned = cleaned.dropna(how="any")
@@ -25,10 +23,6 @@ def _clean_training_returns(returns: pd.DataFrame) -> pd.DataFrame:
 def _weight_sharpe(returns: pd.DataFrame, max_weight: float) -> pd.Series:
     cleaned = _clean_training_returns(returns)
     tickers = list(returns.columns)
-
-    if cleaned.empty:
-        equal = np.full(len(tickers), 1 / len(tickers))
-        return pd.Series(equal, index=tickers)
 
     means = cleaned.mean().values
     cov = cleaned.cov().values
@@ -43,12 +37,7 @@ def _weight_sharpe(returns: pd.DataFrame, max_weight: float) -> pd.Series:
     constraints = ({"type": "eq", "fun": lambda w: np.sum(w) - 1},)
     initial = np.full(count, 1 / count)
     result = minimize(objective, initial, bounds=bounds, constraints=constraints)
-
-    if not result.success or np.allclose(result.x.sum(), 0):
-        weights = initial
-    else:
-        weights = result.x
-
+    weights = result.x
     weights = np.clip(weights, 0, max_weight)
     weights = weights / weights.sum()
 
@@ -60,14 +49,6 @@ def _weight_sharpe(returns: pd.DataFrame, max_weight: float) -> pd.Series:
 
 def _metrics(returns: pd.DataFrame, weights: pd.Series):
     available = returns.loc[:, weights.index].dropna()
-    if available.empty:
-        return {
-            "annual_return": 0.0,
-            "volatility": 0.0,
-            "sharpe_ratio": 0.0,
-            "max_drawdown": 0.0,
-        }
-
     daily = available.dot(weights.loc[available.columns])
     annual_return = _annualize_return(float(daily.mean()))
     volatility = _annualize_volatility(float(daily.std(ddof=0)))
@@ -126,19 +107,11 @@ def build_yearly_portfolios(
 
         year_mask = (returns.index >= start) & (returns.index <= end)
         year_returns = returns.loc[year_mask, tickers]
-        if year_returns.empty:
-            continue
-
-        if lookback_days is None:
-            train_mask = (returns.index < start)
-        else:
-            train_start = start - pd.Timedelta(days=lookback_days)
-            train_mask = (returns.index >= train_start) & (returns.index < start)
+        train_start = start - pd.Timedelta(days=lookback_days)
+        train_mask = (returns.index >= train_start) & (returns.index < start)
 
         training_returns = returns.loc[train_mask, tickers]
         cleaned_training = _clean_training_returns(training_returns)
-        if cleaned_training.shape[0] < min_training_observations:
-            continue
 
         weights = _weight_sharpe(training_returns, max_weight)
         metrics = _metrics(year_returns, weights)
