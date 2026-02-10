@@ -10,11 +10,10 @@ import yfinance as yf
 
 from ..common.config import DATA_RAW, REPORT_DIR, TICKER_NAMES_FILE, ABENOMICS_START, ABENOMICS_END, TIMELINE_START
 from ..data_io.yaml_store import load_frames
-
+from ..common.viz import apply_design_system
 
 def _load_ticker_names():
     return yaml.safe_load(TICKER_NAMES_FILE.read_text(encoding="utf-8"))
-
 
 def _load_portfolios(ticker_names):
     portfolios = {}
@@ -42,7 +41,6 @@ def _load_portfolios(ticker_names):
         portfolios[year] = {"holdings": parsed_holdings, "start": start_ts, "end": end_ts}
     return portfolios
 
-
 def _load_closes(tickers, start=None, end=None, allow_downloads=None):
     tickers = sorted(set(tickers))
     available_locally = [ticker for ticker in tickers if (DATA_RAW / f"{ticker}.yaml").exists()]
@@ -54,7 +52,6 @@ def _load_closes(tickers, start=None, end=None, allow_downloads=None):
         close_series.index = pd.to_datetime(close_series.index)
         series_map[ticker] = close_series.sort_index()
 
-    missing = [ticker for ticker in tickers if ticker not in series_map]
     closes = pd.DataFrame(series_map)
     closes = closes.sort_index()
     return closes
@@ -66,17 +63,18 @@ def _plot_no_data_message(ax, year, message, global_start, global_end):
         message,
         ha="center",
         va="center",
-        fontsize=16,
-        color="dimgray",
+        fontsize=18,
+        color="#B0B0C0",
     )
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title(str(year), fontsize=18, fontweight="bold")
+    ax.set_title(str(year), fontsize=20, fontweight="bold")
     ax.set_xlim(global_start, global_end)
     ax.set_ylim(0.1, 10)
     ax.set_yscale("log")
 
 def create_yearly_portfolio_panels(output_path: Path) -> Path:
+    apply_design_system()
     ticker_names = _load_ticker_names()
     portfolios = _load_portfolios(ticker_names)
     years_with_data = sorted(portfolios)
@@ -86,9 +84,10 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
     global_end = pd.Timestamp.now().normalize()
     closes = _load_closes(tickers, global_start, global_end) if tickers else pd.DataFrame()
 
-    fig, axes = plt.subplots(len(full_year_range), 1, figsize=(24, 5 * len(full_year_range)))
+    fig, axes = plt.subplots(len(full_year_range), 1, figsize=(24, 6 * len(full_year_range)))
     axes = [axes] if isinstance(axes, Axes) else list(axes.ravel())
 
+    # We use the cycler from apply_design_system, but for per-ticker consistency:
     cmap = plt.get_cmap("tab20")
     colors = {ticker: cmap(i % cmap.N) for i, ticker in enumerate(tickers)}
 
@@ -100,17 +99,23 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
             ax.set_xlabel("")
             ax.tick_params(labelbottom=False)
         else:
-            ax.set_xlabel("Date", fontsize=14)
+            ax.set_xlabel("Date", fontsize=16)
 
     def _no_data(ax: Axes, index: int, year, message):
         _plot_no_data_message(ax, year, message, global_start, global_end)
         _finalize_axis(ax, index)
 
     for i, (ax, year) in enumerate(zip(axes, full_year_range)):
-        ax.set_facecolor("#f9f9f9")
+        # apply_design_system sets base params, but we enforce specific overrides here
+        ax.set_facecolor("#0A0A12")
         ax.set_xlim(global_start, global_end)
         ax.set_ylim(0.1, 10)
         ax.set_yscale("log")
+
+        if year not in portfolios:
+            _no_data(ax, i, year, f"No data for {year}")
+            continue
+
         info = portfolios[year]
         weights = pd.Series({holding["ticker"]: holding["weight"] for holding in info["holdings"]}, dtype=float)
         available_tickers = [ticker for ticker in weights.index if ticker in closes.columns]
@@ -120,18 +125,22 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         series_map = {ticker: series for ticker, series in series_map.items() if not series.empty}
         start = max([info["start"], *(series.index.min() for series in series_map.values())])
         frame = pd.DataFrame(series_map).loc[lambda df: df.index >= start].ffill()
+        if frame.empty:
+            _no_data(ax, i, year, f"No data for {year} in range")
+            continue
+
         weights = (weights.loc[frame.columns] / weights.loc[frame.columns].sum()).astype(float)
         scaled = frame.divide(frame.iloc[0])
         portfolio_curve = scaled.mul(weights, axis=1).sum(axis=1)
 
-        abenomics_patch = ax.axvspan(abenomics_start_ts, abenomics_end_ts, color="gray", alpha=0.2, label="Abenomics Period")
+        abenomics_patch = ax.axvspan(abenomics_start_ts, abenomics_end_ts, color="#ffffff", alpha=0.05, label="Abenomics Period")
 
         lines = [
             ax.plot(
                 scaled.index,
                 scaled[ticker],
                 linewidth=1.5,
-                alpha=0.8,
+                alpha=0.7,
                 color=colors.get(ticker, "#555555"),
                 label=f"{ticker_names.get(ticker, ticker)} ({weights[ticker]:.1%})",
             )[0]
@@ -141,8 +150,8 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         portfolio_line = ax.plot(
             portfolio_curve.index,
             portfolio_curve,
-            linewidth=2.5,
-            color="black",
+            linewidth=3.0,
+            color="#00A3AF",  # Serendie Teal for the main series
             label="Portfolio",
         )[0]
 
@@ -156,20 +165,20 @@ def create_yearly_portfolio_panels(output_path: Path) -> Path:
         handles = [entry[1] for entry in legend_entries] + [abenomics_patch]
         labels = [entry[2] for entry in legend_entries] + ["Abenomics Period"]
 
-        ax.set_title(str(year), fontsize=18, fontweight="bold")
-        ax.set_ylabel("Indexed performance (base = 1)", fontsize=14)
-        ax.grid(True, which="both", ls="-", alpha=0.5)
+        ax.set_title(str(year), fontsize=20, fontweight="bold")
+        ax.set_ylabel("Indexed performance (base = 1)", fontsize=16)
+        ax.grid(True, which="both", ls="-", alpha=0.1, color="#FFFFFF")
         ax.xaxis.set_major_locator(mdates.YearLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-        ax.tick_params(axis="x", rotation=30, labelsize=13)
-        ax.tick_params(axis="y", labelsize=13)
-        ax.legend(handles, labels, fontsize=14, ncol=1, frameon=True, loc="center left", bbox_to_anchor=(1, 0.5), facecolor="white", framealpha=1.0)
+        ax.tick_params(axis="x", rotation=30, labelsize=15)
+        ax.tick_params(axis="y", labelsize=15)
+        ax.legend(handles, labels, fontsize=16, ncol=1, frameon=True, loc="center left", bbox_to_anchor=(1, 0.5), facecolor="#1A1A2E", framealpha=0.8)
 
         _finalize_axis(ax, i)
 
-    fig.suptitle("Portfolio Performance by Year", fontsize=22, fontweight="bold")
+    fig.suptitle("Portfolio Performance by Year", fontsize=28, fontweight="bold", color="#005CB9")
     fig.tight_layout(rect=(0, 0, 0.92, 0.96))
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, format=output_path.suffix.lstrip("."), dpi=150)
+    fig.savefig(output_path, format=output_path.suffix.lstrip("."), dpi=150, facecolor="#0A0A12")
     plt.close(fig)
     return output_path
