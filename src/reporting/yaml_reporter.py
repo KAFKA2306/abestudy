@@ -1,8 +1,5 @@
 from __future__ import annotations
-
 from .markdown_reporter import render_summary_report
-
-
 def _round_numbers(data):
     if isinstance(data, float):
         return round(data, 6)
@@ -11,14 +8,10 @@ def _round_numbers(data):
     if isinstance(data, list):
         return [_round_numbers(value) for value in data]
     return data
-
-
 def _scalar(value):
     if isinstance(value, float):
         return f"{value:.6f}"
     return str(value)
-
-
 def _yaml_lines(data, indent=0):
     prefix = "  " * indent
     if isinstance(data, dict):
@@ -42,8 +35,6 @@ def _yaml_lines(data, indent=0):
             )
         ]
     return [f"{prefix}{_scalar(data)}"]
-
-
 def _sort_universe(universe):
     return sorted(
         (
@@ -55,8 +46,6 @@ def _sort_universe(universe):
         ),
         key=lambda item: item["ticker"],
     )
-
-
 def _describe_weights(weights):
     entries = [
         {
@@ -68,7 +57,6 @@ def _describe_weights(weights):
     ]
     ranked = sorted(entries, key=lambda item: item["weight"], reverse=True)
     active = [entry for entry in ranked if entry["weight"] > 0]
-
     def _basic(entries):
         return [
             {
@@ -78,7 +66,6 @@ def _describe_weights(weights):
             }
             for entry in entries
         ]
-
     buckets = [
         ("10%以上", 0.10, None),
         ("5%-10%", 0.05, 0.10),
@@ -101,12 +88,10 @@ def _describe_weights(weights):
         }
         for label, lower, upper in buckets
     ]
-
     by_ticker = {
         entry["ticker"]: {"name": entry["name"], "weight": entry["weight"]}
         for entry in sorted(entries, key=lambda item: item["ticker"])
     }
-
     return {
         "summary": {
             "total_constituents": len(entries),
@@ -130,8 +115,6 @@ def _describe_weights(weights):
         "weight_buckets": weight_buckets,
         "by_ticker": by_ticker,
     }
-
-
 def _format_year_report(year, payload):
     portfolio = payload["portfolio"]
     allocations = _describe_weights(portfolio["weights"])
@@ -151,8 +134,6 @@ def _format_year_report(year, payload):
             "members": _sort_universe(payload.get("universe", [])),
         },
     }
-
-
 def write_reports(results, directory):
     directory.mkdir(parents=True, exist_ok=True)
     formatted = {
