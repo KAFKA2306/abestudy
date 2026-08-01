@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 from functools import lru_cache
 from typing import Dict, Iterable, Mapping, MutableMapping
 
 import yaml
 
-from .config import TICKER_NAMES_FILE, UNIVERSE_SNAPSHOTS_FILE
+from .config import (
+    TICKER_NAMES_FILE,
+    UNIVERSE_PROVENANCE_FILE,
+    UNIVERSE_SNAPSHOTS_FILE,
+)
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _to_date(value) -> dt.date:
@@ -16,15 +23,22 @@ def _to_date(value) -> dt.date:
         return value.to_pydatetime().date()
     if isinstance(value, dt.date):
         return value
-    if isinstance(value, str):
-        return dt.date.fromisoformat(value)
     return dt.date.fromisoformat(str(value))
 
 
+def _load_yaml_mapping(path, label: str) -> dict:
+    if not path.exists():
+        raise ValueError(f"{label} file does not exist: {path}")
+    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"{label} must contain a mapping")
+    return raw
+
+
 def _load_snapshots() -> MutableMapping[dt.date, Dict[str, str]]:
-    raw = yaml.safe_load(UNIVERSE_SNAPSHOTS_FILE.read_text(encoding="utf-8")) or {}
-    if not isinstance(raw, dict) or not raw:
-        raise ValueError("Nikkei 225 membership snapshot file is empty or invalid")
+    raw = _load_yaml_mapping(UNIVERSE_SNAPSHOTS_FILE, "universe snapshot")
+    if not raw:
+        raise ValueError("Nikkei 225 membership snapshot file is empty")
 
     snapshots: Dict[dt.date, Dict[str, str]] = {}
     for key, members in raw.items():
@@ -33,21 +47,77 @@ def _load_snapshots() -> MutableMapping[dt.date, Dict[str, str]]:
             raise ValueError(f"duplicate universe snapshot date: {date.isoformat()}")
         if not isinstance(members, dict) or not members:
             raise ValueError(f"empty universe snapshot: {date.isoformat()}")
-        snapshots[date] = dict(members)
+        snapshots[date] = {str(ticker): str(name) for ticker, name in members.items()}
     return snapshots
 
 
+def _load_provenance() -> dict:
+    return _load_yaml_mapping(UNIVERSE_PROVENANCE_FILE, "universe provenance")
+
+
+def _validate_provenance(
+    snapshots: Mapping[dt.date, Mapping[str, str]], provenance: Mapping,
+) -> list[str]:
+    errors: list[str] = []
+    if provenance.get("dataset_status") != "verified":
+        errors.append("dataset_status must be 'verified'")
+
+    records = provenance.get("snapshots")
+    if not isinstance(records, dict):
+        errors.append("provenance.snapshots must be a mapping")
+        return errors
+
+    expected_dates = {date.isoformat() for date in snapshots}
+    record_dates = {str(key) for key in records}
+    missing = sorted(expected_dates - record_dates)
+    extra = sorted(record_dates - expected_dates)
+    if missing:
+        errors.append(f"missing provenance for snapshots: {', '.join(missing)}")
+    if extra:
+        errors.append(f"provenance has unknown snapshots: {', '.join(extra)}")
+
+    for date_text in sorted(expected_dates & record_dates):
+        record = records[date_text]
+        if not isinstance(record, dict):
+            errors.append(f"{date_text}: provenance entry must be a mapping")
+            continue
+        if str(record.get("as_of", "")) != date_text:
+            errors.append(f"{date_text}: as_of must match the snapshot date")
+        source_url = str(record.get("source_url", ""))
+        if not source_url.startswith("https://"):
+            errors.append(f"{date_text}: source_url must be an https URL")
+        for field in ("published_at", "retrieved_at"):
+            try:
+                _to_date(record.get(field))
+            except Exception:
+                errors.append(f"{date_text}: {field} must be an ISO date")
+        digest = str(record.get("file_sha256", "")).lower()
+        if not _SHA256_RE.fullmatch(digest):
+            errors.append(f"{date_text}: file_sha256 must be a 64-character digest")
+        if record.get("verified_by") in (None, ""):
+            errors.append(f"{date_text}: verified_by is required")
+    return errors
+
+
 _SNAPSHOTS = _load_snapshots()
+_PROVENANCE = _load_provenance()
+_PROVENANCE_ERRORS = _validate_provenance(_SNAPSHOTS, _PROVENANCE)
 _SNAPSHOT_DATES = sorted(_SNAPSHOTS)
+
+
+def assert_verified_universe() -> None:
+    """未検証または出典不明の構成銘柄表を分析へ渡さない。"""
+    if _PROVENANCE_ERRORS:
+        details = "; ".join(_PROVENANCE_ERRORS)
+        raise RuntimeError(
+            "historical Nikkei 225 universe is quarantined because its "
+            f"provenance is not verified: {details}"
+        )
 
 
 @lru_cache(maxsize=None)
 def universe_for_date(as_of) -> Dict[str, str]:
-    """指定日以前で最も新しいスナップショットを返す。
-
-    指定日以前の証拠が存在しない場合、未来のスナップショットを代用しない。
-    """
-
+    assert_verified_universe()
     target = _to_date(as_of)
     eligible_dates = [date for date in _SNAPSHOT_DATES if date <= target]
     if not eligible_dates:
@@ -56,8 +126,7 @@ def universe_for_date(as_of) -> Dict[str, str]:
             f"no universe snapshot on or before {target.isoformat()}; "
             f"earliest available snapshot is {first}"
         )
-    latest = eligible_dates[-1]
-    return dict(_SNAPSHOTS[latest])
+    return dict(_SNAPSHOTS[eligible_dates[-1]])
 
 
 def universe_for_year(year: int) -> Dict[str, str]:
@@ -68,17 +137,27 @@ def tickers_for_year(year: int) -> Iterable[str]:
     return universe_for_year(year).keys()
 
 
-ALL_TICKERS = sorted(
-    {ticker for members in _SNAPSHOTS.values() for ticker in members}
+def all_tickers() -> list[str]:
+    assert_verified_universe()
+    return sorted({ticker for members in _SNAPSHOTS.values() for ticker in members})
+
+
+# Backward-compatible constant. It is deliberately empty while the dataset is
+# quarantined, so callers cannot silently download or analyse contaminated names.
+ALL_TICKERS = all_tickers() if not _PROVENANCE_ERRORS else []
+TICKER_NAMES: Dict[str, str] = (
+    {
+        ticker: name
+        for members in _SNAPSHOTS.values()
+        for ticker, name in members.items()
+    }
+    if not _PROVENANCE_ERRORS
+    else {}
 )
-TICKER_NAMES: Dict[str, str] = {
-    ticker: name
-    for members in _SNAPSHOTS.values()
-    for ticker, name in members.items()
-}
 
 
 def union_names() -> Mapping[str, str]:
+    assert_verified_universe()
     return dict(TICKER_NAMES)
 
 
