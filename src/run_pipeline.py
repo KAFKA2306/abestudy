@@ -9,12 +9,23 @@ from .common.config import (
     LOOKBACK_DAYS,
     MIN_TRAINING_OBSERVATIONS,
 )
-from .common.universe import ALL_TICKERS, load_names, universe_for_year
+from .common.universe import (
+    ALL_TICKERS,
+    assert_verified_universe,
+    load_names,
+    universe_for_year,
+)
 from .ingestion.yfinance_client import collect
 from .data_io.yaml_store import save_frames, load_frames
 from .analytics.optimizer import build_yearly_portfolios
 from .reporting.yaml_reporter import write_reports
+
+
 def main():
+    # Price downloads are irreversible evidence inputs. Fail before any network
+    # access when the historical constituent snapshots are not independently
+    # sourced and verified.
+    assert_verified_universe()
     names = load_names()
     frames = collect(ALL_TICKERS, TIMELINE_START, TIMELINE_END, TIMEZONE)
     save_frames(frames, DATA_RAW)
@@ -29,5 +40,7 @@ def main():
         names,
     )
     write_reports(portfolios, REPORT_DIR)
+
+
 if __name__ == "__main__":
     main()
