@@ -1,0 +1,15 @@
+schema_version: 1
+dataset_name: nikkei225_memberships
+dataset_status: unverified
+reason: >-
+  現在のnikkei225_memberships.yamlには、各基準日時点の公式構成銘柄表へ
+  遡及できるURL、公開日、取得日、原本ハッシュ、検証者が保存されていない。
+  現代の銘柄が過去年のスナップショットへ混入している疑いもあるため、
+  ウォークフォワード分析では使用しない。
+verification_requirements:
+  - 各スナップショットのas_ofが構成銘柄ファイルの日付と一致する
+  - source_urlが当時の公式資料または保存済み公式原本を指す
+  - published_atとretrieved_atをISO日付で保存する
+  - 原本ファイルのSHA-256を保存する
+  - 別担当者が構成銘柄数と変更履歴を照合する
+snapshots: {}
