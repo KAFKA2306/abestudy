@@ -1,10 +1,12 @@
 from pathlib import Path
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 DATA_RAW = BASE_DIR / "data" / "raw"
 REPORT_DIR = BASE_DIR / "reports" / "portfolio"
 REFERENCE_DIR = BASE_DIR / "data" / "reference"
 TICKER_NAMES_FILE = REFERENCE_DIR / "ticker_names.yaml"
 UNIVERSE_SNAPSHOTS_FILE = REFERENCE_DIR / "nikkei225_memberships.yaml"
+UNIVERSE_PROVENANCE_FILE = REFERENCE_DIR / "nikkei225_memberships.provenance.yaml"
 TIMELINE_START = "2009-01-01"
 TIMELINE_END = "2023-12-31"
 ABENOMICS_START = "2012-12-26"
