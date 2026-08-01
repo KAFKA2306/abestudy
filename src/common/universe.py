@@ -26,6 +26,10 @@ def _to_date(value) -> dt.date:
     return dt.date.fromisoformat(str(value))
 
 
+def _date_text(value) -> str:
+    return _to_date(value).isoformat()
+
+
 def _load_yaml_mapping(path, label: str) -> dict:
     if not path.exists():
         raise ValueError(f"{label} file does not exist: {path}")
@@ -62,13 +66,25 @@ def _validate_provenance(
     if provenance.get("dataset_status") != "verified":
         errors.append("dataset_status must be 'verified'")
 
-    records = provenance.get("snapshots")
-    if not isinstance(records, dict):
+    raw_records = provenance.get("snapshots")
+    if not isinstance(raw_records, dict):
         errors.append("provenance.snapshots must be a mapping")
         return errors
 
+    records: dict[str, object] = {}
+    for raw_date, record in raw_records.items():
+        try:
+            normalized_date = _date_text(raw_date)
+        except Exception:
+            errors.append(f"invalid provenance snapshot date: {raw_date!r}")
+            continue
+        if normalized_date in records:
+            errors.append(f"duplicate provenance snapshot date: {normalized_date}")
+            continue
+        records[normalized_date] = record
+
     expected_dates = {date.isoformat() for date in snapshots}
-    record_dates = {str(key) for key in records}
+    record_dates = set(records)
     missing = sorted(expected_dates - record_dates)
     extra = sorted(record_dates - expected_dates)
     if missing:
@@ -81,7 +97,11 @@ def _validate_provenance(
         if not isinstance(record, dict):
             errors.append(f"{date_text}: provenance entry must be a mapping")
             continue
-        if str(record.get("as_of", "")) != date_text:
+        try:
+            as_of = _date_text(record.get("as_of"))
+        except Exception:
+            as_of = ""
+        if as_of != date_text:
             errors.append(f"{date_text}: as_of must match the snapshot date")
         source_url = str(record.get("source_url", ""))
         if not source_url.startswith("https://"):
@@ -142,8 +162,6 @@ def all_tickers() -> list[str]:
     return sorted({ticker for members in _SNAPSHOTS.values() for ticker in members})
 
 
-# Backward-compatible constant. It is deliberately empty while the dataset is
-# quarantined, so callers cannot silently download or analyse contaminated names.
 ALL_TICKERS = all_tickers() if not _PROVENANCE_ERRORS else []
 TICKER_NAMES: Dict[str, str] = (
     {
