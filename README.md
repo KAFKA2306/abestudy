@@ -1,5 +1,7 @@
 # abestudy — アベノミクス期の日本株ポートフォリオ研究
 
+[![Audit fixes](https://github.com/KAFKA2306/abestudy/actions/workflows/audit-fixes.yml/badge.svg)](https://github.com/KAFKA2306/abestudy/actions/workflows/audit-fixes.yml)
+
 アベノミクス期を中心に、年次リバランスの日本株ポートフォリオをウォークフォワード評価する研究コードです。
 
 ## 現在の状態
